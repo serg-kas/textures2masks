@@ -78,10 +78,10 @@ def process(operation_mode, source_files, out_path):
         print("Общее время выполнения: {:.1f} с.".format(time_end - time_start))
 
 
-    # #################### workflow_sam2 #####№№################
-    # Рабочий режим обработки изображения с созданием выходной маски
+    # #################### workflow_masks #####№№################
+    # TODO: Рабочий режим обработки изображения с созданием выходной маски
     # #########################################################
-    if operation_mode == 'workflow_sam2':
+    if operation_mode == 'workflow_masks':
         print(u.txt_separator('=', s.CONS_COLUMNS,
                               txt=' Список файлов для обработки ', txt_align='center'))
         # Загружаем только изображения
