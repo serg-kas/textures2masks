@@ -2,12 +2,13 @@
 .idea
 
 # Folders
-out_files/
-source_files/
-models/
-
+/out_files/
+/source_files/
+#/models/
 
 #
 .env
 __pycache__
 
+#
+/sam2/
