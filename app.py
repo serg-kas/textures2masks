@@ -32,15 +32,7 @@ import workflow as w
 
 # Рабочая директория: полный путь и локальная папка
 working_folder_full_path = os.getcwd()
-# working_folder_base_name = os.path.basename(working_folder_full_path)
 print("Рабочая директория (полный путь): {}".format(working_folder_full_path))
-
-
-# Переменные для подсчета статистики выполнения заданий
-processing_time = 0           # время обработки
-processing_count = 0          # обработанных заданий
-processing_time_wacode = {}   # время обработки по кодам wacode
-processing_count_wacode = {}  # обработанных заданий по кодам wacode
 
 
 # ##################### РЕЖИМЫ РАБОТЫ #########################
@@ -82,15 +74,30 @@ def process(operation_mode, source_files, out_path):
     # TODO: Рабочий режим обработки изображения с созданием выходной маски
     # #########################################################
     if operation_mode == 'workflow_masks':
-        print(u.txt_separator('=', s.CONS_COLUMNS,
-                              txt=' Список файлов для обработки ', txt_align='center'))
+        # Загружаем модель детектора текста
+
         # Загружаем только изображения
-        img_file_list = u.get_files_by_type(source_files, s.ALLOWED_TYPES)
+        img_file_list = u.get_files_by_type(source_files, s.ALLOWED_IMAGES)
         if len(img_file_list) < 1:
-            print("Не нашли файлов для обработки")
-            exit(0)
-        else:
-            pprint(img_file_list, width=len(img_file_list[0]) + 4)
+            print("Не нашли изображений для обработки")
+
+        img_list = w.get_images(img_file_list, autorotate=None, verbose=s.VERBOSE)
+
+        counter = 0
+        for img in img_list:
+            #
+            # start_time_qr = time.perf_counter()
+            # img_parsed, _ = craft.detect_text(img,
+            #                                   detector=detector)
+            # print("{}Отработал детектор текста craft, время {:.3f} с.{}".format(s.MAGENTA_cons,
+            #                                                                     time.perf_counter() - start_time_qr,
+            #                                                                     s.RESET_cons))
+            # if img_parsed is not None:
+            #     Image.fromarray(img_parsed[:, :, ::-1]).show()
+            #
+            # out_file_name = os.path.join(out_path, 'crafted_' + str(counter) + '.png')
+            # cv.imwrite(out_file_name, img_parsed)
+            counter += 1
 
         # #############################################
         # Загрузка МОДЕЛЕЙ и сохранение их в список
@@ -110,13 +117,13 @@ def process(operation_mode, source_files, out_path):
         # #############################################
         # Обрабатываем файлы из списка
         # #############################################
-        time_0 = time.perf_counter()
-
-
-
-        time_1 = time.perf_counter()
-        print("Извлекли и сохранили изображений: {}, время {:.2f} с.".format(len(img_file_list),
-                                                                                        time_1 - time_0))
+        # time_0 = time.perf_counter()
+        #
+        #
+        #
+        # time_1 = time.perf_counter()
+        # print("Извлекли и сохранили изображений: {}, время {:.2f} с.".format(len(img_file_list),
+        #                                                                                 time_1 - time_0))
 
 
         # #############################################

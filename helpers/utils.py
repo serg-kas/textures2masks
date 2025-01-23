@@ -311,6 +311,40 @@ def match_template_cv(img, template, templ_threshold=0.5, templ_metric=cv.TM_CCO
     return img_parsed, pt_list
 
 
+def image_is_close_to_white_cv(img, threshold=200, white_ratio=0.9):
+    """
+    Проверка близости изображения к белому цвету
+
+    :param img: изображение для обработки
+    :param threshold:
+    :param white_ratio: доля белых пикселей на тресхолде
+    :return: True если изображение близко белому, доля белых пикселей
+    """
+    image = img.copy()
+
+    # Преобразование изображения в формат HSV
+    hsv_image = cv.cvtColor(image, cv.COLOR_BGR2HSV)
+
+    # Определение границ для белого цвета в формате HSV
+    lower_white = np.array([0, 0, threshold], dtype=np.uint8)
+    upper_white = np.array([180, 55, 255], dtype=np.uint8)
+
+    # Создание маски для белых областей
+    white_mask = cv.inRange(hsv_image, lower_white, upper_white)
+
+    # Подсчет количества белых пикселей
+    white_pixels = cv.countNonZero(white_mask)
+
+    # Подсчет общего количества пикселей
+    total_pixels = image.shape[0] * image.shape[1]
+
+    # Вычисление доли белых пикселей
+    white_ratio_actual = white_pixels / total_pixels
+
+    # Проверка, превышает ли доля белых пикселей заданный порог
+    return white_ratio_actual >= white_ratio, white_ratio_actual
+
+
 # #############################################################
 #                    ФУНКЦИИ МАТЕМАТИЧЕСКИЕ
 # #############################################################
@@ -359,6 +393,13 @@ def rel_equal(x, y, e):
 # #############################################################
 #                      ФУНКЦИИ ПРОЧИЕ
 # #############################################################
+def always_true(*args, **kwargs):
+    """
+    Возвращает True при любых поданных аргументах
+    """
+    return True
+
+
 def clean_folder(path):
     """
     Очистка папки с удалением только файлов внутри нее
@@ -443,51 +484,6 @@ def txt_separator(string, n=80, txt='', txt_align='center'):
                 start_txt_pos = (n - len(txt)) // 2
                 out_string = out_string[:start_txt_pos] + txt + out_string[-start_txt_pos:]
                 return out_string
-
-
-# #############################################################
-#                  ЭКСПЕРИМЕНТАЛЬНЫЕ функции
-# #############################################################
-
-def always_true(*args, **kwargs):
-    """
-    Возвращает True при любых поданных аргументах
-    """
-    return True
-
-
-def image_is_close_to_white_cv(img, threshold=200, white_ratio=0.9):
-    """
-    Проверка близости изображения к белому цвету
-
-    :param img: изображение для обработки
-    :param threshold:
-    :param white_ratio: доля белых пикселей на тресхолде
-    :return: True если изображение близко белому, доля белых пикселей
-    """
-    image = img.copy()
-
-    # Преобразование изображения в формат HSV
-    hsv_image = cv.cvtColor(image, cv.COLOR_BGR2HSV)
-
-    # Определение границ для белого цвета в формате HSV
-    lower_white = np.array([0, 0, threshold], dtype=np.uint8)
-    upper_white = np.array([180, 55, 255], dtype=np.uint8)
-
-    # Создание маски для белых областей
-    white_mask = cv.inRange(hsv_image, lower_white, upper_white)
-
-    # Подсчет количества белых пикселей
-    white_pixels = cv.countNonZero(white_mask)
-
-    # Подсчет общего количества пикселей
-    total_pixels = image.shape[0] * image.shape[1]
-
-    # Вычисление доли белых пикселей
-    white_ratio_actual = white_pixels / total_pixels
-
-    # Проверка, превышает ли доля белых пикселей заданный порог
-    return white_ratio_actual >= white_ratio, white_ratio_actual
 
 
 # #############################################################
