@@ -2,6 +2,127 @@
 Функции рабочего процесса
 """
 
+# import numpy as np
+# import cv2 as cv
+# import time
+# import base64
+
+import torch
+# import supervision as sv
+
+from sam2.build_sam import build_sam2
+from sam2.sam2_image_predictor import SAM2ImagePredictor
+from sam2.automatic_mask_generator import SAM2AutomaticMaskGenerator
+
+
+
+
+torch.autocast(device_type="cuda", dtype=torch.bfloat16).__enter__()
+
+if torch.cuda.get_device_properties(0).major >= 8:
+    torch.backends.cuda.matmul.allow_tf32 = True
+    torch.backends.cudnn.allow_tf32 = True
+
+
+DEVICE = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+# print(DEVICE)
+# exit(77)
+# DEVICE = torch.device('cpu')
+# CHECKPOINT = f"models/sam2_hiera_large.pt"
+CHECKPOINT = f"models/sam2_hiera_large.pt"
+CONFIG = "sam2_hiera_l.yaml"
+
+sam2_model = build_sam2(CONFIG, CHECKPOINT, device=DEVICE, apply_postprocessing=False)
+
+print(sam2_model)
+
+
+
+exit(77)
+
+
+
+
+
+
+
+# Ресайз изображения к 1024 по большей стороне
+def resize_image(image, target_size):
+    height, width = image.shape[:2]
+
+    if width > height:
+        new_width = target_size
+        new_height = round(height * (target_size / width))
+    else:
+        new_height = target_size
+        new_width = round(width * (target_size / height))
+
+    resized_image = cv.resize(image, (new_width, new_height), interpolation=cv.INTER_AREA)
+    return resized_image
+
+# IoU для бинарных масок
+def calculate_mask_iou(mask1, mask2):
+    # Убедимся, что маски имеют одинаковый размер
+    assert mask1.shape == mask2.shape, "Маски должны иметь одинаковые размеры."
+
+    # Пересечение (AND)
+    intersection = np.logical_and(mask1, mask2)
+
+    # Объединение (OR)
+    union = np.logical_or(mask1, mask2)
+
+    # Количество пикселей в пересечении и объединении
+    intersection_count = np.sum(intersection)
+    union_count = np.sum(union)
+
+    # Вычисление IoU
+    iou = intersection_count / union_count
+
+    return iou
+
+
+def find_non_overlapping_masks(data, iou_threshold=0.5):
+    """
+    Находит элементы из списка словарей, маски которых не пересекаются друг с другом по критерию IoU.
+
+    :param data: Исходный список словарей.
+    :return: Новый список словарей, содержащие непересекающиеся маски.
+    """
+    non_overlapping_list = []
+
+    for item in data:
+        # Извлекаем маску текущего элемента
+        current_mask = item["segmentation"]
+
+        # Флаг, показывающий, пересекается ли текущая маска с любой маской из нового списка
+        overlaps = False
+
+        for existing_item in non_overlapping_list:
+            # Извлекаем маску существующего элемента
+            existing_mask = existing_item["segmentation"]
+
+            # Вычисляем IoU для текущей пары масок
+            iou = calculate_mask_iou(current_mask, existing_mask)
+
+            # Если IoU больше нуля, значит маски пересекаются
+            if iou >= iou_threshold:
+                print("Нашли пересекающиеся маски, IoU = {:.2f}".format(iou))
+                overlaps = True
+                break
+
+        # Если текущая маска не пересекается ни с одной из существующих, добавляем её в новый список
+        if not overlaps:
+            non_overlapping_list.append(item)
+
+    return non_overlapping_list
+
+
+# Преобразуем маску формата True/False в черно-белое изображение
+def convert_mask_to_image(mask):
+    img = np.zeros((*mask.shape, 3), dtype=np.uint8)
+    img[mask] = [255, 255, 255]
+    return img
+
 
 
 
@@ -17,7 +138,7 @@ import time
 # from multiprocessing import Process, Queue
 #
 # import json
-# import base64
+import base64
 # import requests
 #
 import re
