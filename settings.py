@@ -112,7 +112,7 @@ OUT_PATH = 'out_files'
 # Допустимые форматы изображений для загрузки в программу
 ALLOWED_IMAGES = ['.jpg', '.jpeg', '.png']
 # Допустимые форматы файлов для загрузки в программу
-# ALLOWED_TYPES = ALLOWED_IMAGES + ['.pdf']
+ALLOWED_TYPES = ALLOWED_IMAGES + ['.pdf']
 
 
 # #############################################################

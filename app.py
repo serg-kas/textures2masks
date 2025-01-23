@@ -156,7 +156,7 @@ if __name__ == '__main__':
     """
 
     # Проверим наличие и создадим рабочие папки если их нет
-    config.check_folders([s.SOURCE_PATH, s.OUT_PATH, s.MODELS_PATH],
+    config.check_folders([s.SOURCE_PATH, s.OUT_PATH],
                          verbose=s.VERBOSE)
 
     # Параметры командной строки
