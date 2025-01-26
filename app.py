@@ -3,31 +3,32 @@
 Режимы работы см.operation_mode_list
 """
 # import numpy as np
-import cv2 as cv
-import numpy as np
-from PIL import Image
+# import cv2 as cv
+# import numpy as np
+# from PIL import Image
 #
 import os
 import sys
 import time
-from datetime import datetime, timezone, timedelta
+# from datetime import datetime, timezone, timedelta
 # import shutil
-import requests
+# import requests
 # import magic
 # import threading
-import io
-import json
-import base64
+# import io
+# import json
+# import base64
 # from pprint import pprint, pformat
-from pprint import pprint
+# from pprint import pprint
 
 #
 import config
-import log
+# import log
 import settings as s
 import tool_case as t
 import helpers.utils as u
 import workflow as w
+import sam2_model
 
 
 # Рабочая директория: полный путь и локальная папка
@@ -106,14 +107,15 @@ def process(operation_mode, source_files, out_path):
         print(u.txt_separator('=', s.CONS_COLUMNS,
                               txt=' Загрузка и сохранение моделей ', txt_align='center'))
 
-        # Загружаем модель ...
-        # Tool_list = [t.Tool('model_fe',
-        #                     dnn.get_model_dnn(s.MODEL_DNN_FILE_fe,
-        #                                       force_cuda=s.FORCE_CUDA_fe,
-        #                                       verbose=s.VERBOSE),
-        #                     tool_type='model')]
+        # Загружаем модель SAM2
+        Tool_list = [t.Tool('model_sam2',
+                            sam2_model.get_model_sam2(s.SAM2_config_file,
+                                                      s.SAM2_checkpoint_file,
+                                                      force_cuda=s.SAM2_force_cuda,
+                                                      verbose=s.VERBOSE),
+                            tool_type='model')]
 
-
+        exit(77)
         # #############################################
         # Обрабатываем файлы из списка
         # #############################################

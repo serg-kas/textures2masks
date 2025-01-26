@@ -4,41 +4,49 @@
 
 # import numpy as np
 # import cv2 as cv
-# import time
-# import base64
-
-import torch
+# from PIL import Image, ImageDraw, ImageFont
 # import supervision as sv
+#
+import io
+import os
+import sys
+import time
+import re
+# import json
+# import base64
+# import requests
+# from multiprocessing import Process, Queue
+# from pprint import pprint, pformat
+#
+import settings as s
+import helpers.utils as u
+#
+# from sam2.build_sam import build_sam2
+# from sam2.sam2_image_predictor import SAM2ImagePredictor
+# from sam2.automatic_mask_generator import SAM2AutomaticMaskGenerator
+#
+# import torch
+# torch.autocast(device_type="cuda", dtype=torch.bfloat16).__enter__()
+#
+# if torch.cuda.get_device_properties(0).major >= 8:
+#     torch.backends.cuda.matmul.allow_tf32 = True
+#     torch.backends.cudnn.allow_tf32 = True
 
-from sam2.build_sam import build_sam2
-from sam2.sam2_image_predictor import SAM2ImagePredictor
-from sam2.automatic_mask_generator import SAM2AutomaticMaskGenerator
 
-
-
-
-torch.autocast(device_type="cuda", dtype=torch.bfloat16).__enter__()
-
-if torch.cuda.get_device_properties(0).major >= 8:
-    torch.backends.cuda.matmul.allow_tf32 = True
-    torch.backends.cudnn.allow_tf32 = True
-
-
-DEVICE = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+# DEVICE = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 # print(DEVICE)
-# exit(77)
 # DEVICE = torch.device('cpu')
-# CHECKPOINT = f"models/sam2_hiera_large.pt"
-CHECKPOINT = f"models/sam2_hiera_large.pt"
-CONFIG = "sam2_hiera_l.yaml"
+# CHECKPOINT_file = f"models/sam2_hiera_large.pt"
+# CONFIG_file = "sam2_hiera_l.yaml"
 
-sam2_model = build_sam2(CONFIG, CHECKPOINT, device=DEVICE, apply_postprocessing=False)
-
-print(sam2_model)
+# sam2_model = build_sam2(CONFIG, CHECKPOINT, device=DEVICE, apply_postprocessing=False)
 
 
+# print(type(sam2_model))
 
-exit(77)
+
+
+# exit(77)
 
 
 
@@ -127,25 +135,7 @@ def convert_mask_to_image(mask):
 
 
 
-import numpy as np
-import cv2 as cv
-# from PIL import Image, ImageDraw, ImageFont
-#
-import io
-import os
-import sys
-import time
-# from multiprocessing import Process, Queue
-#
-# import json
-import base64
-# import requests
-#
-import re
-from pprint import pprint, pformat
-#
-import settings as s
-import helpers.utils as u
+
 
 # Цвета
 black = s.black
