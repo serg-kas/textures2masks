@@ -5,23 +5,31 @@ import logging
 from datetime import datetime
 from pytz import timezone
 #
-DEFAULT_LOGGER_NAME = ''
+DEFAULT_LOGGER_NAME = 'ballot_ocr'
 #
 DEFAULT_LOGGER_FORMATTER = '%(asctime)s %(name)s %(levelname)s: %(message)s'
 DEFAULT_DATE_TIME_FORMAT = "%Y-%m-%d %H:%M:%S"
+#
+DEFAULT_TIMEZONE = 'Europe/Moscow'
 #
 DEBUG = logging.DEBUG
 INFO = logging.INFO
 WARNING = logging.WARNING
 ERROR = logging.ERROR
 CRITICAL = logging.CRITICAL
+#
+ERROR_LEVELS = {'DEBUG':DEBUG,
+                'INFO':INFO,
+                'WARNING':WARNING,
+                'ERROR':ERROR,
+                'CRITICAL':CRITICAL}
 
 
 # Создаем кастомный форматтер
 class CustomFormatter(logging.Formatter):
     def formatTime(self, record, datefmt=None):
         dt = datetime.fromtimestamp(record.created)
-        dt = dt.astimezone(timezone('Europe/Moscow'))
+        dt = dt.astimezone(timezone(DEFAULT_TIMEZONE))
         if datefmt:
             s = dt.strftime(datefmt)
         else:
@@ -32,7 +40,8 @@ class CustomFormatter(logging.Formatter):
 def get_logger(name=DEFAULT_LOGGER_NAME,
                level=INFO,
                formatter=DEFAULT_LOGGER_FORMATTER,
-               dt_format=DEFAULT_DATE_TIME_FORMAT):
+               dt_format=DEFAULT_DATE_TIME_FORMAT,
+               prevent_propagate=True):
     """
     Функция инициализации логгера
 
@@ -40,6 +49,7 @@ def get_logger(name=DEFAULT_LOGGER_NAME,
     :param level: уровень логирования
     :param formatter: формат сообщения логгера
     :param dt_format: формат времени логгера
+    :param prevent_propagate: отключить возможное наследование обработчика
     :return: logger
     """
     logger = logging.getLogger(name)
@@ -51,5 +61,60 @@ def get_logger(name=DEFAULT_LOGGER_NAME,
     ch.setFormatter(CustomFormatter(fmt=formatter, datefmt=dt_format))
 
     logger.addHandler(ch)
+    #
+    if prevent_propagate:
+        logger.propagate = False
 
     return logger
+
+
+def check_if_logger_exists(logger_name):
+    """
+    Проверяет существование логгера
+    """
+    loggers = logging.getLogger().manager.loggerDict
+    return logger_name in loggers
+
+
+def set_logger_level(logger_name, level_name):
+    """
+    Устанавливает уровень сообщений логгера
+
+    :param logger_name: имя логгера
+    :param level_name: уровень логирования
+    :return: True если операция успешна, False если такого логгера нет
+    """
+    assert level_name in ERROR_LEVELS.keys(), "Некорректное название уровня логгирования"
+
+    if check_if_logger_exists(logger_name):
+        logger = logging.getLogger(logger_name)
+        logger.setLevel(ERROR_LEVELS[level_name])
+        return True
+    else:
+        return False
+
+
+def get_logger_level(logger_name):
+    """
+    Возвращает уровень логгирования по имени логгера
+
+    :param logger_name: имя логгера
+    :return: уровень логгирования, если логгер не найден возвращает 'WRONG LOGGER NAME'
+    """
+    if check_if_logger_exists(logger_name):
+        logger = logging.getLogger(logger_name)
+        level = logger.level
+        if level == CRITICAL:
+            return "CRITICAL"
+        elif level == ERROR:
+            return "ERROR"
+        elif level == WARNING:
+            return "WARNING"
+        elif level == INFO:
+            return "INFO"
+        elif level == DEBUG:
+            return "DEBUG"
+        else:
+            return "NOTSET"
+    else:
+        return None
