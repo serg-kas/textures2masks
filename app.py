@@ -82,23 +82,7 @@ def process(operation_mode, source_files, out_path):
         if len(img_file_list) < 1:
             print("Не нашли изображений для обработки")
 
-        img_list = w.get_images(img_file_list, autorotate=None, verbose=s.VERBOSE)
-
-        counter = 0
-        for img in img_list:
-            #
-            # start_time_qr = time.perf_counter()
-            # img_parsed, _ = craft.detect_text(img,
-            #                                   detector=detector)
-            # print("{}Отработал детектор текста craft, время {:.3f} с.{}".format(s.MAGENTA_cons,
-            #                                                                     time.perf_counter() - start_time_qr,
-            #                                                                     s.RESET_cons))
-            # if img_parsed is not None:
-            #     Image.fromarray(img_parsed[:, :, ::-1]).show()
-            #
-            # out_file_name = os.path.join(out_path, 'crafted_' + str(counter) + '.png')
-            # cv.imwrite(out_file_name, img_parsed)
-            counter += 1
+        img_list = w.get_images_simple(img_file_list, verbose=s.VERBOSE)
 
         # #############################################
         # Загрузка МОДЕЛЕЙ и сохранение их в список
@@ -115,34 +99,45 @@ def process(operation_mode, source_files, out_path):
                                                       verbose=s.VERBOSE),
                             tool_type='model')]
 
-        exit(77)
         # #############################################
         # Обрабатываем файлы из списка
         # #############################################
-        # time_0 = time.perf_counter()
-        #
-        #
-        #
-        # time_1 = time.perf_counter()
-        # print("Извлекли и сохранили изображений: {}, время {:.2f} с.".format(len(img_file_list),
-        #                                                                                 time_1 - time_0))
+        time_0 = time.perf_counter()
 
+        counter = 0
+        for img in img_list:
+            #
+            # start_time_qr = time.perf_counter()
+            # img_parsed, _ = craft.detect_text(img,
+            #                                   detector=detector)
+            # print("{}Отработал детектор текста craft, время {:.3f} с.{}".format(s.MAGENTA_cons,
+            #                                                                     time.perf_counter() - start_time_qr,
+            #                                                                     s.RESET_cons))
+            # if img_parsed is not None:
+            #     Image.fromarray(img_parsed[:, :, ::-1]).show()
+            #
+            # out_file_name = os.path.join(out_path, 'crafted_' + str(counter) + '.png')
+            # cv.imwrite(out_file_name, img_parsed)
+            counter += 1
+        #
+        time_1 = time.perf_counter()
+        print("Обработали изображений: {}, время {:.2f} с.".format(len(img_file_list),
+                                                                   time_1 - time_0))
 
         # #############################################
         # Выведем статистику использования ИНСТРУМЕНТОВ
         # #############################################
-        # print(u.txt_separator('=', s.CONS_COLUMNS,
-        #                       txt=' Статистика использования экземпляров'
-        #                           ' КЛАССА Tool (инструментов) ', txt_align='center'))
-        # for tool in Tool_list:
-        #     print("Инструмент (модель) {}, вызывали, раз: {}".format(tool.name, tool.counter))
+        print(u.txt_separator('=', s.CONS_COLUMNS,
+                              txt=' Статистика использования экземпляров'
+                                  ' КЛАССА Tool (инструментов) ', txt_align='center'))
+        for tool in Tool_list:
+            print("Инструмент (модель) {}, вызывали, раз: {}".format(tool.name, tool.counter))
 
         # #############################################
         # Удалим экземпляры КЛАССОВ и ненужные файлы
         # #############################################
-        # print(u.txt_separator('=', s.CONS_COLUMNS,
-        #                       txt=' Удаление экземпляров КЛАССОВ Page,Tool и ненужных файлов ', txt_align='center'))
-
+        print(u.txt_separator('=', s.CONS_COLUMNS,
+                              txt=' Удаление экземпляров КЛАССОВ Tool и ненужных файлов ', txt_align='center'))
         #
         time_end = time.time()
         if s.VERBOSE:
