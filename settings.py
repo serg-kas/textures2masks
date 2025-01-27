@@ -118,6 +118,7 @@ ALLOWED_TYPES = ALLOWED_IMAGES + ['.pdf']
 # #############################################################
 #                    ПАРАМЕТРЫ МОДЕЛЕЙ
 # #############################################################
+
 # Параметры модели SAM2
 SAM2_config_file = "sam2_hiera_l.yaml"
 SAM2_checkpoint_file = "models/sam2_hiera_large.pt"

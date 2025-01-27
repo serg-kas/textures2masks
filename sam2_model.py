@@ -12,7 +12,6 @@ from sam2.sam2_image_predictor import SAM2ImagePredictor
 from sam2.automatic_mask_generator import SAM2AutomaticMaskGenerator
 
 
-
 # #########################################################
 # Функции для работы с моделью SAM2
 # #########################################################
@@ -29,8 +28,8 @@ def get_model_sam2(config_file,
     :return: model: загруженная модель
     """
     if verbose:
-        print("  Загружаем файл чекпоинта модели: {}".format(model_file))
         print("  Загружаем файл конфигурации модели: {}".format(config_file))
+        print("  Загружаем файл чекпоинта модели: {}".format(model_file))
     time_0 = time.perf_counter()
 
     #
@@ -38,7 +37,7 @@ def get_model_sam2(config_file,
     if force_cuda:
         if torch.cuda.is_available():
             if verbose:
-                print("  Trying to use CUDA")
+                print("  Found CUDA, trying to use it")
             #
             DEVICE = torch.device('cuda')
             #
@@ -55,6 +54,7 @@ def get_model_sam2(config_file,
             print("  Ignoring CUDA, using CPU")
     #
     model = build_sam2(config_file, model_file, device=DEVICE, apply_postprocessing=False)
+    #
     time_1 = time.perf_counter()
     if verbose:
         print("  Время загрузки модели, с: {:.2f}".format(time_1 - time_0))
