@@ -2,9 +2,8 @@
 Основной модуль программы.
 Режимы работы см.operation_mode_list
 """
-# import numpy as np
-# import cv2 as cv
-# import numpy as np
+import numpy as np
+import cv2 as cv
 # from PIL import Image
 #
 import os
@@ -13,7 +12,6 @@ import time
 # from datetime import datetime, timezone, timedelta
 # import shutil
 # import requests
-# import magic
 # import threading
 # import io
 # import json
@@ -106,8 +104,280 @@ def process(operation_mode, source_files, out_path):
 
         counter = 0
         for img in img_list:
+            image_bgr_original = img.copy()
+            image_rgb_original = cv.cvtColor(image_bgr_original, cv.COLOR_BGR2RGB)
+            print("Загрузили изображение размерности: {}".format(image_bgr_original.shape))
+
+            # Ресайз к номинальному разрешению
+            image_bgr = w.resize_image(image_bgr_original, 1024)
+            image_rgb = w.resize_image(image_rgb_original, 1024)
+            print("Ресайз изображения: {} -> {}".format(image_bgr_original.shape, image_bgr.shape))
+
+            # Инициализация генератора масок
+            mask_generator = sam2_model.get_mask_generator(t.get_tool_by_name('model_sam2',
+                                                                              tool_list=Tool_list).model,
+                                                           verbose=s.VERBOSE)
+            # Запуск генератора масок
+            start_time = time.time()
+            sam2_result = mask_generator.generate(image_rgb)
+            end_time = time.time()
+            print("Получили список масок: {}, время {:.2f} c.".format(len(sam2_result), end_time - start_time))
+
+            # Сортируем результаты по увеличению площади маски
+            sam2_result_sorted = sorted(sam2_result, key=lambda x: x['area'], reverse=False)
+
+            # Отбираем не пересекающиеся маски (по установленному порогу)
+            non_overlapping_result = w.find_non_overlapping_masks(sam2_result_sorted,
+                                                                  iou_threshold=s.SAM2_iou_threshold)
+
+            # Отбираем маски площадью не менее заданной
+            mask_list = []
+            area_min = 500
+            area_max = 1024 * 1024 * 0.8
+
+            for res in non_overlapping_result:
+                # print("\nsegmentation shape:", res['segmentation'].shape)
+                # sv.plot_image(res['segmentation'], size=(6, 6))
+
+                if area_min < res['area'] < area_max:
+                    mask_list.append(res['segmentation'])
+                    print("Взяли маску площадью: {}".format(res['area']))
+                else:
+                    print("Пропустили маску площадью: {}".format(res['area']))
+            print("Собрали список масок: {}".format(len(mask_list)))
+
+            # Формирование выходной маски объединением отобранных
+            height, width = image_rgb.shape[:2]
+            combined_mask = np.zeros((height, width), dtype=bool)
             #
-            # start_time_qr = time.perf_counter()
+            for mask in mask_list:
+                combined_mask = np.logical_or(combined_mask, mask)
+            print("Сформировали выходную маску размерности {}".format(combined_mask.shape))
+            # sv.plot_image(combined_mask, size=(12, 12))
+
+            # Сохраняем результат в локальное хранилище в оригинальном разрешении
+            H, W = image_bgr_original.shape[:2]
+            print("Оригинальное разрешение: {}".format((H, W)))
+
+            result_image = w.convert_mask_to_image(combined_mask)
+
+            # result_image_original = cv2.resize(result_image, (W, H), interpolation=cv.INTER_CUBIC)
+            result_image_original = cv.resize(result_image, (W, H), interpolation=cv.INTER_LANCZOS4)
+
+            out_file_name = os.path.join(out_path, 'result_mask_1024.jpg')
+            cv.imwrite(out_file_name, result_image_original)
+
+            # Проверим имеющийся набор масок в разрешении 1024
+            mask1024_list = mask_list.copy()
+
+            if len(mask1024_list) > 0:
+                print("Имеем набор {} масок в разрешении {}".format(len(mask1024_list), mask1024_list[0].shape))
+            else:
+                print("Список масок пуст, необходимо выполнить предикт в разрешении 1024")
+
+            # Рассчитаем центры масс масок
+            center_of_mass_list = []
+            for mask1024 in mask1024_list:
+                binary_mask = mask1024.astype(np.uint8)
+                center_of_mass_list.append(w.compute_center_of_mass_cv(binary_mask))
+
+            # Визуализируем рассчитанные центры масс в разрешении 1024
+            image1024 = result_image.copy()
+            for center in center_of_mass_list:
+                X, Y = center
+                X = int(X)
+                Y = int(Y)
+                image1024 = cv.circle(image1024, (X, Y), 5, (0, 0, 255), -1)
+            # u.show_image_cv(image1024, title=str(image1024.shape))
+
+            # Пересчитываем центры масс к оригинальному разрешению и визуализируем
+            H, W = image_bgr_original.shape[:2]
+            print("Оригинальное разрешение: {}".format((H, W)))
+
+            hh, ww = image_bgr.shape[:2]
+            print("Разрешение приведенное к 1024: {}".format((hh, ww)))
+
+            image_original_parsed = result_image_original.copy()
+
+            center_of_mass_original_list = []
+            for center in center_of_mass_list:
+                X_1024, Y_1024 = center
+                X = X_1024 * W / ww
+                Y = Y_1024 * H / hh
+                X = int(X)
+                Y = int(Y)
+                center_of_mass_original_list.append((X, Y))
+
+                radius = int(5 * W / 1024)
+                image_original_parsed = cv.circle(image_original_parsed, (X, Y), radius, (255, 0, 0), -1)
+            # u.show_image_cv(u.img_resize_cv(image_original_parsed, img_size=1024), title=str(image_original_parsed.shape))
+
+            # ПАРАМЕТРЫ
+            SCORE_TRESHOLD = 0.95  # Ниже какого уровня score применять алгоритм выбора
+
+            # Инициализация предиктора
+            predictor = sam2_model.get_predictor(t.get_tool_by_name('model_sam2',
+                                                                    tool_list=Tool_list).model,
+                                                 verbose=s.VERBOSE)
+
+            #
+            H, W = image_bgr_original.shape[:2]
+            print("Оригинальное разрешение: {}".format((H, W)))
+
+            hh, ww = image_bgr.shape[:2]
+            print("Разрешение приведенное к 1024: {}".format((hh, ww)))
+
+            gap = int(512 * max(hh, ww) / max(H, W))
+            print("Размер шага, на который отступать от центра масс масок низкого разрешения: {}".format(gap))
+
+            # Получим список кропов масок около центров масс в разрешении 1024
+            count = 0
+            mask1024_center_list = []
+            for idx, center in enumerate(center_of_mass_list[:]):
+                Xc, Yc = center
+                X1 = Xc - gap if Xc > gap else 0
+                Y1 = Yc - gap if Yc > gap else 0
+                X2 = Xc + gap if Xc < ww - gap else ww
+                Y2 = Yc + gap if Yc < hh - gap else hh
+                # print((Xc, Yc), (X1, Y1), (X2, Y2))
+
+                # Берем изображение фрагмента маски вокруг центра
+                mask1024 = mask1024_list[idx]
+                mask1024_center_img = mask1024[Y1:Y2, X1:X2].copy()
+                mask1024_center_list.append(mask1024_center_img)
+                # print(mask1024_center_img.shape)
+                count += 1
+            print("Обработали {} масок".format(count))
+
+            #
+            ccc = 0
+            mask_promted_list = []
+            mask_promted_coord_list = []
+            for idx, center_original in enumerate(center_of_mass_original_list[:]):
+                Xc, Yc = center_original
+                X1 = Xc - 512 if Xc > 512 else 0
+                Y1 = Yc - 512 if Yc > 512 else 0
+                X2 = Xc + 512 if Xc < W - 512 else W
+                Y2 = Yc + 512 if Yc < H - 512 else H
+                mask_promted_coord_list.append([X1, Y1, X2, Y2])
+
+                # Берем изображение фрагмента текстуры вокруг центра
+                image_center = image_rgb_original[Y1:Y2, X1:X2].copy()
+                # print(image_center.shape)
+
+                # Заносим изображение в модель
+                predictor.set_image(image_center)
+
+                Xp = Xc - X1
+                Yp = Yc - Y1
+                promt_point = (Xp, Yp)
+                # print(promt_point)
+
+                input_point = np.array([promt_point])
+                # print(input_point)
+
+                input_label = np.ones(input_point.shape[0])
+                # print(input_label)
+
+                masks, scores, logits = predictor.predict(point_coords=input_point,
+                                                          point_labels=input_label,
+                                                          multimask_output=True)
+                # print(masks.shape)
+                # print(scores.shape)
+
+                # Определяем лучший sacore в предикте
+                best_idx = np.argmax(scores)
+                best_score = scores[best_idx]
+
+                if best_score >= SCORE_TRESHOLD:
+                    # Выше порога SCORE_TRESHOLD выбираем маску автоматически
+                    mask_promted_list.append(masks[best_idx])
+                    # print(mask_promted_list[-1].shape)
+
+                    #
+                    counter += 1
+                    print("По score выбрана маска {} из {}; центр: {}, размер: {}, score: {:.2f}".format(counter,
+                                                                                                         len(center_of_mass_original_list),
+                                                                                                         (Xc, Yc),
+                                                                                                         mask_promted_list[-1].shape,
+                                                                                                         best_score))
+                else:
+                    # Ниже порога SCORE_TRESHOLD отбираем по сходству с маской в разрешении 1024
+                    print(
+                        "\n=============================================== BEST SCORE: {:.2f} ================================================".format(
+                            best_score))
+
+                    # Изображение центра на фрагменте текстуры
+                    image_center_parsed = image_center.copy()
+                    image_center_parsed = cv.cvtColor(image_center_parsed, cv.COLOR_RGB2BGR)
+                    image_center_parsed = cv.circle(image_center_parsed, (Xc - X1, Yc - Y1), 15, (0, 0, 255), -1)
+                    # sv.plot_image(image_center_parsed, size=(3,3))
+
+                    # Берем изображение фрагмента маски в разрешении 1024
+                    mask1024_center = mask1024_center_list[idx]
+                    # Делаем ресайз к размеру маски в оригинальном изображении
+                    Hc, Wc = image_center.shape[:2]
+                    mask_center_resized = mask1024_center.astype(np.uint8) * 255
+                    mask_center_resized = cv.resize(mask_center_resized, (Wc, Hc), interpolation=cv.INTER_LANCZOS4)
+
+                    # Изображение центра на фрагменте маски, полученной ресайзом
+                    mask_center_parsed = mask_center_resized.copy()
+                    mask_center_parsed = cv.cvtColor(mask_center_parsed, cv.COLOR_GRAY2BGR)
+                    mask_center_parsed = cv.circle(mask_center_parsed, (Xc - X1, Yc - Y1), 15, (0, 0, 255), -1)
+                    # sv.plot_image(image_center_parsed, size=(3,3))
+
+                    # Три сгенерированные маски, исходное и распарсенное изображения
+                    # sv.plot_images_grid(
+                    #     images=[image_center_parsed, mask_center_parsed] + list(masks),
+                    #     titles=["(Xc, Yc)={}".format((Xc, Yc)), "Low res mask"] + [f"score: {score:.2f}" for score in
+                    #                                                                scores],
+                    #     grid_size=(1, 5),
+                    #     size=(12, 6))
+
+                    #
+                    time.sleep(1)
+
+                    # Сравниваем маски
+                    IoU_list = []
+                    for mask in masks:
+                        IoU_list.append(w.calculate_mask_iou(mask_center_resized, mask))
+                    print("Выбор лучшей маски по максимальному IoU: {}".format(IoU_list))
+                    best_iou_idx = IoU_list.index(max(IoU_list))
+
+                    mask_promted_list.append(masks[best_iou_idx])
+                    # print(mask_promted_list[-1].shape)
+
+                    #
+                    ccc += 1
+                    # sv.plot_image(mask_promted_list[-1], size=(3, 3))
+                    print("По IoU выбрана маска {} из {}; центр: {}, размер: {}, score: {:.2f}".format(ccc, len(center_of_mass_original_list), (Xc, Yc), mask_promted_list[-1].shape, scores[best_iou_idx]))
+
+
+            # Собираем выходную маску в оригинальном разрешении
+            combined_original_mask = np.zeros((H, W), dtype=bool)
+
+            for idx, mask in enumerate(mask_promted_list):
+                X1, Y1, X2, Y2 = mask_promted_coord_list[idx]
+                # print(X1, Y1, X2, Y2)
+
+                mask_temp = np.zeros((H, W), dtype=bool)
+                mask_temp[Y1:Y2, X1:X2] = mask
+
+                combined_original_mask = np.logical_or(combined_original_mask, mask_temp)
+
+            print(combined_original_mask.shape)
+            # sv.plot_image(combined_original_mask, size=(12, 12))
+
+            # Сохраняем результат в локальное хранилище в оригинальном разрешении
+            result_image_final = w.convert_mask_to_image(combined_original_mask)
+            # u.show_image_cv(u.img_resize_cv(result_image_final, img_size=1024), title=str(result_image_final.shape))
+
+            file_name = "result_mask_{}x{}.jpg".format(result_image.shape[0], result_image.shape[1])
+            out_file_name = os.path.join(out_path, file_name)
+            if cv.imwrite(out_file_name, result_image_final):
+                print("Успешно записан файл: {}".format(out_file_name))
+
+            start_time_process = time.perf_counter()
             # img_parsed, _ = craft.detect_text(img,
             #                                   detector=detector)
             # print("{}Отработал детектор текста craft, время {:.3f} с.{}".format(s.MAGENTA_cons,

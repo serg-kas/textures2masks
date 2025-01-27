@@ -115,6 +115,24 @@ def convert_mask_to_image(mask):
     return img
 
 
+# Нахождение центра масс
+def compute_center_of_mass_cv(binary_mask):
+    # Убедимся, что маска является numpy массивом
+    # binary_mask = np.array(binary_mask, dtype=np.uint8)
+
+    # Используем функцию moments для вычисления моментов изображения
+    moments = cv.moments(binary_mask, 1)
+
+    # Вычисляем координаты центра масс
+    if moments['m00'] != 0:
+        cX = int(moments['m10'] / moments['m00'])
+        cY = int(moments['m01'] / moments['m00'])
+    else:
+        # Если m00 равно 0, значит маска пустая
+        return None
+    return (cX, cY)
+
+
 def get_images_simple(source_files, verbose=False):
     """
     По списку файлов считывает изображения и возвращает их списком.

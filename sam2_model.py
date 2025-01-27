@@ -61,6 +61,55 @@ def get_model_sam2(config_file,
     return model
 
 
+def get_mask_generator(model, verbose=False):
+    """
+    Загрузка модели из указанного файла
+    :param model: модель
+    :param verbose: выводить дополнительную информацию
+    :return: model: загруженная модель
+    """
+    if verbose:
+        print("  Инициализируем генератор масок")
+    time_0 = time.perf_counter()
+    #
+    mask_generator = SAM2AutomaticMaskGenerator(model)
+    #
+    time_1 = time.perf_counter()
+    if verbose:
+        print("  Время подготовки генератора масок, с: {:.2f}".format(time_1 - time_0))
+    return mask_generator
+
+
+def get_predictor(model, verbose=False):
+    """
+    Загрузка модели из указанного файла
+    :param model: модель
+    :param verbose: выводить дополнительную информацию
+    :return: model: загруженная модель
+    """
+    if verbose:
+        print("  Инициализируем предиктора")
+    time_0 = time.perf_counter()
+    #
+    predictor = SAM2ImagePredictor(model)
+    #
+    time_1 = time.perf_counter()
+    if verbose:
+        print("  Время подготовки предиктора, с: {:.2f}".format(time_1 - time_0))
+    return predictor
+
+
+
+
+
+
+
+
+
+
+
+
+
 # #########################################################
 # Функции для работы с моделями DNN opencv - универсальные
 # #########################################################
