@@ -125,6 +125,7 @@ SAM2_checkpoint_file = "models/sam2_hiera_large.pt"
 SAM2_force_cuda = True
 # SAM2_force_cuda = False
 SAM2_iou_threshold = 0.25
+SAM2_score_threshold = 0.95
 
 # #############################################################
 #                     ПАРАМЕТРЫ ОБРАБОТКИ

@@ -132,7 +132,7 @@ def process(operation_mode, source_files, out_path):
 
             # Отбираем маски площадью не менее заданной
             mask_list = []
-            area_min = 500
+            area_min = 100
             area_max = 1024 * 1024 * 0.8
 
             for res in non_overlapping_result:
@@ -213,7 +213,7 @@ def process(operation_mode, source_files, out_path):
             # u.show_image_cv(u.img_resize_cv(image_original_parsed, img_size=1024), title=str(image_original_parsed.shape))
 
             # ПАРАМЕТРЫ
-            SCORE_TRESHOLD = 0.95  # Ниже какого уровня score применять алгоритм выбора
+            SCORE_TRESHOLD = s.SAM2_score_threshold  # Ниже какого уровня score применять алгоритм выбора
 
             # Инициализация предиктора
             predictor = sam2_model.get_predictor(t.get_tool_by_name('model_sam2',
@@ -231,7 +231,7 @@ def process(operation_mode, source_files, out_path):
             print("Размер шага, на который отступать от центра масс масок низкого разрешения: {}".format(gap))
 
             # Получим список кропов масок около центров масс в разрешении 1024
-            count = 0
+            c1 = 0
             mask1024_center_list = []
             for idx, center in enumerate(center_of_mass_list[:]):
                 Xc, Yc = center
@@ -246,8 +246,8 @@ def process(operation_mode, source_files, out_path):
                 mask1024_center_img = mask1024[Y1:Y2, X1:X2].copy()
                 mask1024_center_list.append(mask1024_center_img)
                 # print(mask1024_center_img.shape)
-                count += 1
-            print("Обработали {} масок".format(count))
+                c1 += 1
+            print("Обработали {} масок".format(c1))
 
             #
             ccc = 0
@@ -295,8 +295,8 @@ def process(operation_mode, source_files, out_path):
                     # print(mask_promted_list[-1].shape)
 
                     #
-                    counter += 1
-                    print("По score выбрана маска {} из {}; центр: {}, размер: {}, score: {:.2f}".format(counter,
+                    ccc += 1
+                    print("По score выбрана маска {} из {}; центр: {}, размер: {}, score: {:.2f}".format(ccc,
                                                                                                          len(center_of_mass_original_list),
                                                                                                          (Xc, Yc),
                                                                                                          mask_promted_list[-1].shape,
@@ -377,17 +377,10 @@ def process(operation_mode, source_files, out_path):
             if cv.imwrite(out_file_name, result_image_final):
                 print("Успешно записан файл: {}".format(out_file_name))
 
-            start_time_process = time.perf_counter()
-            # img_parsed, _ = craft.detect_text(img,
-            #                                   detector=detector)
+            # start_time_process = time.perf_counter()
             # print("{}Отработал детектор текста craft, время {:.3f} с.{}".format(s.MAGENTA_cons,
             #                                                                     time.perf_counter() - start_time_qr,
             #                                                                     s.RESET_cons))
-            # if img_parsed is not None:
-            #     Image.fromarray(img_parsed[:, :, ::-1]).show()
-            #
-            # out_file_name = os.path.join(out_path, 'crafted_' + str(counter) + '.png')
-            # cv.imwrite(out_file_name, img_parsed)
             counter += 1
         #
         time_1 = time.perf_counter()
