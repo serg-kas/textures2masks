@@ -25,6 +25,16 @@ import helpers.utils as u
 # from sam2.sam2_image_predictor import SAM2ImagePredictor
 # from sam2.automatic_mask_generator import SAM2AutomaticMaskGenerator
 
+# Цвета
+black = s.black
+blue = s.blue
+green = s.green
+red = s.red
+yellow = s.yellow
+purple = s.purple
+turquoise = s.turquoise
+white = s.white
+
 
 # Ресайз изображения к 1024 по большей стороне
 def resize_image(image, target_size):
@@ -104,21 +114,12 @@ def convert_mask_to_image(mask):
     img[mask] = [255, 255, 255]
     return img
 
-# Цвета
-black = s.black
-blue = s.blue
-green = s.green
-red = s.red
-yellow = s.yellow
-purple = s.purple
-turquoise = s.turquoise
-white = s.white
-
 
 def get_images_simple(source_files, verbose=False):
     """
     По списку файлов считывает изображения и возвращает их списком.
-    Упрощенная функция без определения ротации листа
+    Упрощенная функция без определения ротации листа.
+    При ошибке чтения файла просто пропускает данное изображение
 
     :param source_files: список файлов с полными путями к ним
     :param verbose: выводить подробные сообщения
