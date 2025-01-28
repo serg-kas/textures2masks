@@ -107,7 +107,7 @@ CONS_COLUMNS = 0  # ширина консоли (0 - попытаться опр
 # Папки по умолчанию
 SOURCE_PATH = 'source_files'
 OUT_PATH = 'out_files'
-# MODELS_PATH = 'models'
+MODELS_PATH = 'models'
 
 # Допустимые форматы изображений для загрузки в программу
 ALLOWED_IMAGES = ['.jpg', '.jpeg', '.png']
