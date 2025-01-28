@@ -58,12 +58,55 @@ def process(operation_mode, source_files, out_path):
             break
     print('Режим работы, заданный в параметрах командной строки: {}'.format(operation_mode))
 
+
     # ###################### test #######################
-    # TODO: Тестовый режим (самопроверка установки)
+    # Тестовый режим (самопроверка установки)
     # #########################################################
     if operation_mode == 'self_test':
         print(u.txt_separator('=', s.CONS_COLUMNS,
                               txt=' Тестовый режим ', txt_align='center'))
+
+        import torch
+        if torch.cuda.is_available():
+            print("GPU is available")
+            FORCE_CUDA = True
+
+            # Получаем версию CUDA
+            cuda_version = torch.version.cuda
+            print(f"Версия CUDA: {cuda_version}")
+
+            # Получаем индекс первого доступного устройства
+            index = torch.cuda.current_device()
+
+            # Получаем свойства устройства
+            props = torch.cuda.get_device_properties(index)
+            # print("props", props)
+
+            # Выводим информацию об устройстве
+            print(f"Название видеокарты: {props.name}")
+            # print(f"Количество мультипроцессоров: {props.multi_processor_count}")
+            print(f"Объем оперативной памяти: {props.total_memory // (1024 ** 2)} МБ")
+            print(f"CUDA compatibility: {props.major}.{props.minor}")
+
+        else:
+            print("GPU is not available")
+            FORCE_CUDA = False
+
+        # Инициализируем модель
+        model = None
+        try:
+            print("Запускаем функцию загрузки модели")
+            model = sam2_model.get_model_sam2(s.SAM2_config_file,
+                                              s.SAM2_checkpoint_file,
+                                              force_cuda=FORCE_CUDA,
+                                              verbose=s.VERBOSE)
+        except:
+            print("Ошибка при загрузке модели")
+        #
+        if model is not None:
+            print("Проверка установки успешно завершена")
+        else:
+            print("Проверьте установку программного обеспечения")
         #
         time_end = time.time()
         print("Общее время выполнения: {:.1f} с.".format(time_end - time_start))
