@@ -104,7 +104,7 @@ def process(operation_mode, source_files, out_path):
             print("Ошибка при загрузке модели")
         #
         if model is not None:
-            print("Проверка установки успешно завершена")
+            print("Проверка установки успешно завершена")  # TODO: сделать запуск модели на фейковых данных ?
         else:
             print("Проверьте установку программного обеспечения")
         #
@@ -143,15 +143,22 @@ def process(operation_mode, source_files, out_path):
         # #############################################
         # Обрабатываем файлы из списка
         # #############################################
+        print(u.txt_separator('=', s.CONS_COLUMNS,
+                              txt=' Обрабатываем файлы из списка ', txt_align='center'))
+        #
         time_0 = time.perf_counter()
-
-        counter = 0
+        counter_img = 0
         for img in img_list:
+            #
             image_bgr_original = img.copy()
             image_rgb_original = cv.cvtColor(image_bgr_original, cv.COLOR_BGR2RGB)
             print("Загрузили изображение размерности: {}".format(image_bgr_original.shape))
 
-            # Ресайз к номинальному разрешению
+            # Сохраним размеры оригинального изображения
+            H, W = image_bgr_original.shape[:2]
+            print("Сохранили оригинальное разрешение: {}".format((H, W)))
+
+            # Ресайз к номинальному разрешению 1024
             image_bgr = w.resize_image(image_bgr_original, 1024)
             image_rgb = w.resize_image(image_rgb_original, 1024)
             print("Ресайз изображения: {} -> {}".format(image_bgr_original.shape, image_bgr.shape))
@@ -160,7 +167,10 @@ def process(operation_mode, source_files, out_path):
             mask_generator = sam2_model.get_mask_generator(t.get_tool_by_name('model_sam2',
                                                                               tool_list=Tool_list).model,
                                                            verbose=s.VERBOSE)
-            # Запуск генератора масок
+            if mask_generator is not None:
+                print("Успешно инициализирован генератор масок")
+
+            # Запуск генератора масок на изображении 1024
             start_time = time.time()
             sam2_result = mask_generator.generate(image_rgb)
             end_time = time.time()
@@ -175,8 +185,10 @@ def process(operation_mode, source_files, out_path):
 
             # Отбираем маски площадью не менее заданной
             mask_list = []
-            area_min = 100
-            area_max = 1024 * 1024 * 0.8
+            area_min = s.AREA_MIN
+            area_max = s.AREA_MAX
+
+            exit(77)
 
             for res in non_overlapping_result:
                 # print("\nsegmentation shape:", res['segmentation'].shape)
@@ -424,7 +436,7 @@ def process(operation_mode, source_files, out_path):
             # print("{}Отработал детектор текста craft, время {:.3f} с.{}".format(s.MAGENTA_cons,
             #                                                                     time.perf_counter() - start_time_qr,
             #                                                                     s.RESET_cons))
-            counter += 1
+            counter_img += 1
         #
         time_1 = time.perf_counter()
         print("Обработали изображений: {}, время {:.2f} с.".format(len(img_file_list),

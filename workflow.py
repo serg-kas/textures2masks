@@ -7,11 +7,11 @@ import cv2 as cv
 # from PIL import Image, ImageDraw, ImageFont
 # import supervision as sv
 #
-import io
-import os
-import sys
+# import io
+# import os
+# import sys
 import time
-import re
+# import re
 # import json
 # import base64
 # import requests
@@ -19,7 +19,7 @@ import re
 # from pprint import pprint, pformat
 #
 import settings as s
-import helpers.utils as u
+# import helpers.utils as u
 #
 # from sam2.build_sam import build_sam2
 # from sam2.sam2_image_predictor import SAM2ImagePredictor
@@ -36,8 +36,14 @@ turquoise = s.turquoise
 white = s.white
 
 
-# Ресайз изображения к 1024 по большей стороне
 def resize_image(image, target_size):
+    """
+    Ресайз изображения к target_size по большей стороне
+
+    :param image: изображение
+    :param target_size: целевой размер
+    :return: обработанное изображение
+    """
     height, width = image.shape[:2]
 
     if width > height:
@@ -51,33 +57,13 @@ def resize_image(image, target_size):
     return resized_image
 
 
-# IoU для бинарных масок
-def calculate_mask_iou(mask1, mask2):
-    # Убедимся, что маски имеют одинаковый размер
-    assert mask1.shape == mask2.shape, "Маски должны иметь одинаковые размеры."
-
-    # Пересечение (AND)
-    intersection = np.logical_and(mask1, mask2)
-
-    # Объединение (OR)
-    union = np.logical_or(mask1, mask2)
-
-    # Количество пикселей в пересечении и объединении
-    intersection_count = np.sum(intersection)
-    union_count = np.sum(union)
-
-    # Вычисление IoU
-    iou = intersection_count / union_count
-
-    return iou
-
-
 def find_non_overlapping_masks(data, iou_threshold=0.5):
     """
-    Находит элементы из списка словарей, маски которых не пересекаются друг с другом по критерию IoU.
+    Находит элементы из списка словарей, маски которых не пересекаются друг с другом по критерию IoU
 
-    :param data: Исходный список словарей.
-    :return: Новый список словарей, содержащие непересекающиеся маски.
+    :param data: исходный список словарей
+    :param iou_threshold: порог
+    :return: Новый список словарей, содержащие непересекающиеся маски
     """
     non_overlapping_list = []
 
@@ -106,6 +92,27 @@ def find_non_overlapping_masks(data, iou_threshold=0.5):
             non_overlapping_list.append(item)
 
     return non_overlapping_list
+
+
+# IoU для бинарных масок
+def calculate_mask_iou(mask1, mask2):
+    # Убедимся, что маски имеют одинаковый размер
+    assert mask1.shape == mask2.shape, "Маски должны иметь одинаковые размеры."
+
+    # Пересечение (AND)
+    intersection = np.logical_and(mask1, mask2)
+
+    # Объединение (OR)
+    union = np.logical_or(mask1, mask2)
+
+    # Количество пикселей в пересечении и объединении
+    intersection_count = np.sum(intersection)
+    union_count = np.sum(union)
+
+    # Вычисление IoU
+    iou = intersection_count / union_count
+
+    return iou
 
 
 # Преобразуем маску формата True/False в черно-белое изображение
