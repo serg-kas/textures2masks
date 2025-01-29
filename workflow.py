@@ -65,8 +65,9 @@ def find_non_overlapping_masks(data, iou_threshold=0.5):
     :param iou_threshold: порог
     :return: Новый список словарей, содержащие непересекающиеся маски
     """
-    non_overlapping_list = []
+    print("Оставляем только непересекающиеся по тресхолду {} маски".format(iou_threshold))
 
+    non_overlapping_list = []
     for item in data:
         # Извлекаем маску текущего элемента
         current_mask = item["segmentation"]
@@ -81,16 +82,15 @@ def find_non_overlapping_masks(data, iou_threshold=0.5):
             # Вычисляем IoU для текущей пары масок
             iou = calculate_mask_iou(current_mask, existing_mask)
 
-            # Если IoU больше нуля, значит маски пересекаются
+            # Если IoU больше порога, значит маски пересекаются
             if iou >= iou_threshold:
-                print("Нашли пересекающиеся маски, IoU = {:.2f}".format(iou))
+                print("  Нашли пересекающиеся маски, IoU = {:.2f}".format(iou))
                 overlaps = True
                 break
-
         # Если текущая маска не пересекается ни с одной из существующих, добавляем её в новый список
         if not overlaps:
             non_overlapping_list.append(item)
-
+    print("Нашли {} не пересекающихся масок".format(len(non_overlapping_list)))
     return non_overlapping_list
 
 
@@ -111,7 +111,6 @@ def calculate_mask_iou(mask1, mask2):
 
     # Вычисление IoU
     iou = intersection_count / union_count
-
     return iou
 
 
@@ -137,7 +136,7 @@ def compute_center_of_mass_cv(binary_mask):
     else:
         # Если m00 равно 0, значит маска пустая
         return None
-    return (cX, cY)
+    return cX, cY
 
 
 def get_images_simple(source_files, verbose=False):

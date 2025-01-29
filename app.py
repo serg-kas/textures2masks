@@ -163,6 +163,9 @@ def process(operation_mode, source_files, out_path):
             image_rgb = w.resize_image(image_rgb_original, 1024)
             print("Ресайз изображения: {} -> {}".format(image_bgr_original.shape, image_bgr.shape))
 
+            # Сохраним размеры изображения номинального разрешения 1024
+            height, width = image_rgb.shape[:2]
+
             # Инициализация генератора масок
             mask_generator = sam2_model.get_mask_generator(t.get_tool_by_name('model_sam2',
                                                                               tool_list=Tool_list).model,
@@ -184,105 +187,88 @@ def process(operation_mode, source_files, out_path):
                                                                   iou_threshold=s.SAM2_iou_threshold)
 
             # Отбираем маски площадью не менее заданной
-            mask_list = []
             area_min = s.AREA_MIN
             area_max = s.AREA_MAX
+            print("Фильтруем маски по площади от {} до {}".format(area_min, area_max))
 
-            exit(77)
-
+            mask_list = []
             for res in non_overlapping_result:
-                # print("\nsegmentation shape:", res['segmentation'].shape)
-                # sv.plot_image(res['segmentation'], size=(6, 6))
-
                 if area_min < res['area'] < area_max:
                     mask_list.append(res['segmentation'])
-                    print("Взяли маску площадью: {}".format(res['area']))
+                    print("  Взяли маску площадью: {}".format(res['area']))
                 else:
-                    print("Пропустили маску площадью: {}".format(res['area']))
+                    print("  Пропустили маску площадью: {}".format(res['area']))
             print("Собрали список масок: {}".format(len(mask_list)))
 
-            # Формирование выходной маски объединением отобранных
-            height, width = image_rgb.shape[:2]
+            # Формируем выходную маску объединением отобранных
+            print("Формируем выходную маску объединением отобранных")
             combined_mask = np.zeros((height, width), dtype=bool)
-            #
             for mask in mask_list:
                 combined_mask = np.logical_or(combined_mask, mask)
             print("Сформировали выходную маску размерности {}".format(combined_mask.shape))
-            # sv.plot_image(combined_mask, size=(12, 12))
 
-            # Сохраняем результат в локальное хранилище в оригинальном разрешении
-            H, W = image_bgr_original.shape[:2]
-            print("Оригинальное разрешение: {}".format((H, W)))
+            # Ресайз к оригинальному разрешению и сохранение результата
+            result_mask1024 = w.convert_mask_to_image(combined_mask)
+            result_mask1024_original = cv.resize(result_mask1024, (W, H), interpolation=cv.INTER_LANCZOS4)  # cv.INTER_CUBIC
 
-            result_image = w.convert_mask_to_image(combined_mask)
-
-            # result_image_original = cv2.resize(result_image, (W, H), interpolation=cv.INTER_CUBIC)
-            result_image_original = cv.resize(result_image, (W, H), interpolation=cv.INTER_LANCZOS4)
-
-            out_file_name = os.path.join(out_path, 'result_mask_1024.jpg')
-            cv.imwrite(out_file_name, result_image_original)
+            out_file_name = os.path.join(out_path, 'result_mask1024.jpg')
+            if cv.imwrite(out_file_name, result_mask1024_original):
+                print("Сохранили в оригинальном разрешении маску, полученную через ресайз от 1024: {}".format(out_file_name))
 
             # Проверим имеющийся набор масок в разрешении 1024
             mask1024_list = mask_list.copy()
-
             if len(mask1024_list) > 0:
                 print("Имеем набор {} масок в разрешении {}".format(len(mask1024_list), mask1024_list[0].shape))
             else:
-                print("Список масок пуст, необходимо выполнить предикт в разрешении 1024")
+                pass  # TODO: ?
 
             # Рассчитаем центры масс масок
             center_of_mass_list = []
             for mask1024 in mask1024_list:
                 binary_mask = mask1024.astype(np.uint8)
                 center_of_mass_list.append(w.compute_center_of_mass_cv(binary_mask))
+            print("Рассчитали центры масс {} масок".format(len(mask1024_list)))
 
             # Визуализируем рассчитанные центры масс в разрешении 1024
-            image1024 = result_image.copy()
-            for center in center_of_mass_list:
-                X, Y = center
-                X = int(X)
-                Y = int(Y)
-                image1024 = cv.circle(image1024, (X, Y), 5, (0, 0, 255), -1)
-            # u.show_image_cv(image1024, title=str(image1024.shape))
+            # result_mask1024_centers = result_mask1024.copy()
+            # for center in center_of_mass_list:
+            #     X, Y = center
+            #     X = int(X)
+            #     Y = int(Y)
+            #     result_mask1024_centers = cv.circle(result_mask1024_centers, (X, Y), 5, s.red, -1)
+            # u.show_image_cv(result_mask1024_centers, title=str(result_mask1024_centers.shape))
 
-            # Пересчитываем центры масс к оригинальному разрешению и визуализируем
-            H, W = image_bgr_original.shape[:2]
-            print("Оригинальное разрешение: {}".format((H, W)))
+            #
+            result_mask_original_centers = result_mask1024_original.copy()
+            # u.show_image_cv(u.img_resize_cv(result_mask_original_centers, img_size=1024), title=str(result_mask_original_centers.shape))
 
-            hh, ww = image_bgr.shape[:2]
-            print("Разрешение приведенное к 1024: {}".format((hh, ww)))
-
-            image_original_parsed = result_image_original.copy()
-
+            # Пересчитываем центры масс к оригинальному разрешению
+            print("Пересчитываем центры масс к оригинальному разрешению")
             center_of_mass_original_list = []
             for center in center_of_mass_list:
                 X_1024, Y_1024 = center
-                X = X_1024 * W / ww
-                Y = Y_1024 * H / hh
+                X = X_1024 * W / width
+                Y = Y_1024 * H / height
                 X = int(X)
                 Y = int(Y)
                 center_of_mass_original_list.append((X, Y))
 
                 radius = int(5 * W / 1024)
-                image_original_parsed = cv.circle(image_original_parsed, (X, Y), radius, (255, 0, 0), -1)
-            # u.show_image_cv(u.img_resize_cv(image_original_parsed, img_size=1024), title=str(image_original_parsed.shape))
+                result_mask_original_centers = cv.circle(result_mask_original_centers, (X, Y), radius, s.blue, -1)
+            # u.show_image_cv(u.img_resize_cv(result_mask_original_centers, img_size=1024), title=str(result_mask_original_centers.shape))
 
-            # ПАРАМЕТРЫ
-            SCORE_TRESHOLD = s.SAM2_score_threshold  # Ниже какого уровня score применять алгоритм выбора
+            # Ниже какого уровня score применять алгоритм выбора
+            SCORE_TRESHOLD = s.SAM2_score_threshold
 
             # Инициализация предиктора
             predictor = sam2_model.get_predictor(t.get_tool_by_name('model_sam2',
                                                                     tool_list=Tool_list).model,
                                                  verbose=s.VERBOSE)
+            if predictor is not None:
+                print("Предиктор инициализирован успешно")
 
-            #
-            H, W = image_bgr_original.shape[:2]
-            print("Оригинальное разрешение: {}".format((H, W)))
-
-            hh, ww = image_bgr.shape[:2]
-            print("Разрешение приведенное к 1024: {}".format((hh, ww)))
-
-            gap = int(512 * max(hh, ww) / max(H, W))
+            # TODO: ревизовать ниже
+            gap = int(512 * max(height, width) / max(H, W))
             print("Размер шага, на который отступать от центра масс масок низкого разрешения: {}".format(gap))
 
             # Получим список кропов масок около центров масс в разрешении 1024

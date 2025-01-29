@@ -88,7 +88,7 @@ def get_predictor(model, verbose=False):
     :return: model: загруженная модель
     """
     if verbose:
-        print("  Инициализируем предиктора")
+        print("Инициализируем предиктора")
     time_0 = time.perf_counter()
     #
     predictor = SAM2ImagePredictor(model)
