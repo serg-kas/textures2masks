@@ -195,9 +195,9 @@ def process(operation_mode, source_files, out_path):
             for res in non_overlapping_result:
                 if area_min < res['area'] < area_max:
                     mask_list.append(res['segmentation'])
-                    print("  Взяли маску площадью: {}".format(res['area']))
+                    print("\r  Взяли маску площадью: {}".format(res['area']), end="")
                 else:
-                    print("  Пропустили маску площадью: {}".format(res['area']))
+                    print("\r  Пропустили маску площадью: {}".format(res['area']), end="")
             print("Собрали список масок: {}".format(len(mask_list)))
 
             # Формируем выходную маску объединением отобранных
