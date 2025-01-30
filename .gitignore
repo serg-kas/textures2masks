@@ -12,3 +12,4 @@ __pycache__
 
 #
 #/sam2/
+/models/sam2_hiera_large.pt
