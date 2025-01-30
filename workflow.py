@@ -65,8 +65,8 @@ def find_non_overlapping_masks(data, iou_threshold=0.5):
     :param iou_threshold: порог
     :return: Новый список словарей, содержащие непересекающиеся маски
     """
-    print("Оставляем только непересекающиеся по тресхолду {} маски".format(iou_threshold))
-
+    print("Оставляем только не пересекающиеся по тресхолду {} маски".format(iou_threshold))
+    counter_overlapping = 0
     non_overlapping_list = []
     for item in data:
         # Извлекаем маску текущего элемента
@@ -84,12 +84,15 @@ def find_non_overlapping_masks(data, iou_threshold=0.5):
 
             # Если IoU больше порога, значит маски пересекаются
             if iou >= iou_threshold:
-                print("\r  Нашли пересекающиеся маски, IoU = {:.3f}".format(iou), end="")
+                print("\r  Нашли пересекающихся масок: {}, IoU = {:.3f}".format(counter_overlapping, iou), end="")
                 overlaps = True
                 break
         # Если текущая маска не пересекается ни с одной из существующих, добавляем её в новый список
         if not overlaps:
             non_overlapping_list.append(item)
+        else:
+            counter_overlapping += 1
+    print("{}Отбросили {} пересекающихся масок".format(s.CR_CLEAR_cons, counter_overlapping))
     print("{}Нашли {} не пересекающихся масок".format(s.CR_CLEAR_cons, len(non_overlapping_list)))
     return non_overlapping_list
 
