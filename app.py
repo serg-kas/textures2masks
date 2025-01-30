@@ -272,7 +272,7 @@ def process(operation_mode, source_files, out_path):
             gap = int(512 * max(height, width) / max(H, W))
             print("  Размер шага, на который отступать от центра масс масок разрешения 1024: {}".format(gap))
             #
-            counter_crop = 0
+            counter_crop_1024 = 0
             mask1024_center_list = []
             for idx, center in enumerate(center_of_mass_list[:]):
                 Xc, Yc = center
@@ -286,8 +286,8 @@ def process(operation_mode, source_files, out_path):
                 mask1024 = mask1024_list[idx]
                 mask1024_center_img = mask1024[Y1:Y2, X1:X2].copy()
                 mask1024_center_list.append(mask1024_center_img)
-                counter_crop += 1
-            print("Обработали {} масок (собрали кропы вокруг центров)".format(counter_crop))
+                counter_crop_1024 += 1
+            print("Обработали {} масок (собрали кропы вокруг центров в разрешении 1024)".format(counter_crop_1024))
 
             # Цикл обработки кропов (сегментация в оригинальном разрешении вокруг центров)
             print("Сегментация в оригинальном разрешении вокруг центров")
@@ -309,50 +309,46 @@ def process(operation_mode, source_files, out_path):
                 # Заносим изображение в модель
                 predictor.set_image(image_center)
 
+                # Промт
                 Xp = Xc - X1
                 Yp = Yc - Y1
                 promt_point = (Xp, Yp)
                 # print(promt_point)
-
                 input_point = np.array([promt_point])
                 # print(input_point)
-
-                input_label = np.ones(input_point.shape[0])
+                input_label = np.ones(input_point.shape[0])  # TODO: ?
                 # print(input_label)
 
                 masks, scores, logits = predictor.predict(point_coords=input_point,
                                                           point_labels=input_label,
                                                           multimask_output=True)
-                # print(masks.shape)
-                # print(scores.shape)
-                print()
+                tool_model_sam2.counter += 1
+                # print(masks.shape, scores.shape)
 
                 # Определяем лучший score в предикте
                 best_idx = np.argmax(scores)
                 best_score = scores[best_idx]
 
+                # Если score выше порога SCORE_TRESHOLD, то выбираем маску автоматически
                 if best_score >= SCORE_TRESHOLD:
-                    # Выше порога SCORE_TRESHOLD выбираем маску автоматически
                     mask_promted_list.append(masks[best_idx])
                     # print(mask_promted_list[-1].shape)
 
+                    print("{}  По score выбрана маска {} из {}; центр: {}, размер: {}, score: {:.3f}".format(s.CR_CLEAR_cons,
+                                                                                                             counter_crop,
+                                                                                                             len(center_of_mass_original_list),
+                                                                                                             (Xc, Yc),
+                                                                                                             mask_promted_list[-1].shape,
+                                                                                                             best_score))
                     #
                     counter_crop += 1
-                    print("По score выбрана маска {} из {}; центр: {}, размер: {}, score: {:.2f}".format(counter_crop,
-                                                                                                         len(center_of_mass_original_list),
-                                                                                                         (Xc, Yc),
-                                                                                                         mask_promted_list[-1].shape,
-                                                                                                         best_score))
-                else:
-                    # Ниже порога SCORE_TRESHOLD отбираем по сходству с маской в разрешении 1024
-                    print(
-                        "\n=============================================== BEST SCORE: {:.2f} ================================================".format(
-                            best_score))
 
+                # Если score ниже порога SCORE_TRESHOLD, отбираем маску по IoU с маской в разрешении 1024
+                else:
                     # Изображение центра на фрагменте текстуры
-                    image_center_parsed = image_center.copy()
-                    image_center_parsed = cv.cvtColor(image_center_parsed, cv.COLOR_RGB2BGR)
-                    image_center_parsed = cv.circle(image_center_parsed, (Xc - X1, Yc - Y1), 15, (0, 0, 255), -1)
+                    # image_center_parsed = image_center.copy()
+                    # image_center_parsed = cv.cvtColor(image_center_parsed, cv.COLOR_RGB2BGR)
+                    # image_center_parsed = cv.circle(image_center_parsed, (Xc - X1, Yc - Y1), 15, (0, 0, 255), -1)
                     # sv.plot_image(image_center_parsed, size=(3,3))
 
                     # Берем изображение фрагмента маски в разрешении 1024
@@ -363,9 +359,9 @@ def process(operation_mode, source_files, out_path):
                     mask_center_resized = cv.resize(mask_center_resized, (Wc, Hc), interpolation=cv.INTER_LANCZOS4)
 
                     # Изображение центра на фрагменте маски, полученной ресайзом
-                    mask_center_parsed = mask_center_resized.copy()
-                    mask_center_parsed = cv.cvtColor(mask_center_parsed, cv.COLOR_GRAY2BGR)
-                    mask_center_parsed = cv.circle(mask_center_parsed, (Xc - X1, Yc - Y1), 15, (0, 0, 255), -1)
+                    # mask_center_parsed = mask_center_resized.copy()
+                    # mask_center_parsed = cv.cvtColor(mask_center_parsed, cv.COLOR_GRAY2BGR)
+                    # mask_center_parsed = cv.circle(mask_center_parsed, (Xc - X1, Yc - Y1), 15, (0, 0, 255), -1)
                     # sv.plot_image(image_center_parsed, size=(3,3))
 
                     # Три сгенерированные маски, исходное и распарсенное изображения
@@ -376,24 +372,24 @@ def process(operation_mode, source_files, out_path):
                     #     grid_size=(1, 5),
                     #     size=(12, 6))
 
-                    #
-                    # time.sleep(1)
-
-                    # Сравниваем маски
+                    # Сравниваем маски по IoU
                     IoU_list = []
                     for mask in masks:
                         IoU_list.append(w.calculate_mask_iou(mask_center_resized, mask))
-                    print("Выбор лучшей маски по максимальному IoU: {}".format(IoU_list))
+                    #
+                    # print("Выбор лучшей маски по максимальному IoU: {}".format(IoU_list))
                     best_iou_idx = IoU_list.index(max(IoU_list))
-
                     mask_promted_list.append(masks[best_iou_idx])
                     # print(mask_promted_list[-1].shape)
 
+                    print("{}  По IoU выбрана маска {} из {}; центр: {}, размер: {}, score: {:.3f}".format(s.CR_CLEAR_cons,
+                                                                                                           counter_crop,
+                                                                                                           len(center_of_mass_original_list),
+                                                                                                           (Xc, Yc),
+                                                                                                           mask_promted_list[-1].shape,
+                                                                                                           scores[best_iou_idx]))
                     #
                     counter_crop += 1
-                    # sv.plot_image(mask_promted_list[-1], size=(3, 3))
-                    print("По IoU выбрана маска {} из {}; центр: {}, размер: {}, score: {:.2f}".format(counter_crop, len(center_of_mass_original_list), (Xc, Yc), mask_promted_list[-1].shape, scores[best_iou_idx]))
-
 
             # Собираем выходную маску в оригинальном разрешении
             combined_original_mask = np.zeros((H, W), dtype=bool)
@@ -406,23 +402,17 @@ def process(operation_mode, source_files, out_path):
                 mask_temp[Y1:Y2, X1:X2] = mask
 
                 combined_original_mask = np.logical_or(combined_original_mask, mask_temp)
-
-            print(combined_original_mask.shape)
-            # sv.plot_image(combined_original_mask, size=(12, 12))
+            print("Собрали выходную маску в оригинальном разрешении: {}".format(combined_original_mask.shape))
 
             # Сохраняем результат в локальное хранилище в оригинальном разрешении
             result_image_final = w.convert_mask_to_image(combined_original_mask)
             # u.show_image_cv(u.img_resize_cv(result_image_final, img_size=1024), title=str(result_image_final.shape))
 
-            file_name = "result_mask_{}x{}.jpg".format(result_image.shape[0], result_image.shape[1])
+            file_name = "result_mask_{}x{}.jpg".format(result_image_final.shape[0], result_image_final.shape[1])
             out_file_name = os.path.join(out_path, file_name)
             if cv.imwrite(out_file_name, result_image_final):
                 print("Успешно записан файл: {}".format(out_file_name))
-
-            # start_time_process = time.perf_counter()
-            # print("{}Отработал детектор текста craft, время {:.3f} с.{}".format(s.MAGENTA_cons,
-            #                                                                     time.perf_counter() - start_time_qr,
-            #                                                                     s.RESET_cons))
+            #
             counter_img += 1
         #
         time_1 = time.perf_counter()
