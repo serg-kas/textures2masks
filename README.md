@@ -23,20 +23,16 @@ git clone https://github.com/facebookresearch/sam2.git
 cd sam2
 pip install -e .
 
-5. Скачиваем веса (идем в папку checkpoints)
-
-сd checkpoints 
-./download_ckpts.sh 
-
-Файл sam2_hiera_large.pt скопировать в папку models в приложении
-
-Выходим из checkpoints
-cd ..
-
-6. Возвращаемся в папку приложения
+5. Возвращаемся в папку приложения
 
 cd ..
 cd textures2masks
+
+6. Идем в папку models и скачиваем веса
+
+сd models
+./download_ckpts.sh 
+cd ..
 
 7. Корректность установки можно проверить тестовым запуском
 
