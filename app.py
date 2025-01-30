@@ -277,7 +277,7 @@ def process(operation_mode, source_files, out_path):
                 mask1024_center_img = mask1024[Y1:Y2, X1:X2].copy()
                 mask1024_center_list.append(mask1024_center_img)
                 counter_crop_1024 += 1
-            print("Собрали кропов вокруг центров в разрешении 1024: {})".format(counter_crop_1024))
+            print("Собрали кропов вокруг центров в разрешении 1024: {}".format(counter_crop_1024))
 
             # Ниже какого уровня score применять алгоритм выбора
             SCORE_TRESHOLD = s.SAM2_score_threshold
