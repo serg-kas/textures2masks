@@ -84,13 +84,13 @@ def find_non_overlapping_masks(data, iou_threshold=0.5):
 
             # Если IoU больше порога, значит маски пересекаются
             if iou >= iou_threshold:
-                print("\r  Нашли пересекающиеся маски, IoU = {:.2f}".format(iou), end="")
+                print("\r  Нашли пересекающиеся маски, IoU = {:.3f}".format(iou), end="")
                 overlaps = True
                 break
         # Если текущая маска не пересекается ни с одной из существующих, добавляем её в новый список
         if not overlaps:
             non_overlapping_list.append(item)
-    print("Нашли {} не пересекающихся масок".format(len(non_overlapping_list)))
+    print("{}Нашли {} не пересекающихся масок".format(s.CR_CLEAR_cons, len(non_overlapping_list)))
     return non_overlapping_list
 
 

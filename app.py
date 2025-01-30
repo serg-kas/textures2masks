@@ -132,13 +132,15 @@ def process(operation_mode, source_files, out_path):
         print(u.txt_separator('=', s.CONS_COLUMNS,
                               txt=' Загрузка и сохранение моделей ', txt_align='center'))
 
-        # Загружаем модель SAM2
+        # Загружаем модель SAM2 в класс Tool
         Tool_list = [t.Tool('model_sam2',
                             sam2_model.get_model_sam2(s.SAM2_config_file,
                                                       s.SAM2_checkpoint_file,
                                                       force_cuda=s.SAM2_force_cuda,
                                                       verbose=s.VERBOSE),
                             tool_type='model')]
+        #
+        tool_model_sam2 = t.get_tool_by_name('model_sam2', tool_list=Tool_list)
 
         # #############################################
         # Обрабатываем файлы из списка
@@ -167,15 +169,14 @@ def process(operation_mode, source_files, out_path):
             height, width = image_rgb.shape[:2]
 
             # Инициализация генератора масок
-            mask_generator = sam2_model.get_mask_generator(t.get_tool_by_name('model_sam2',
-                                                                              tool_list=Tool_list).model,
-                                                           verbose=s.VERBOSE)
+            mask_generator = sam2_model.get_mask_generator(tool_model_sam2.model, verbose=s.VERBOSE)
             if mask_generator is not None:
                 print("Успешно инициализирован генератор масок")
 
             # Запуск генератора масок на изображении 1024
             start_time = time.time()
             sam2_result = mask_generator.generate(image_rgb)
+            tool_model_sam2.counter +=1
             end_time = time.time()
             print("Получили список масок: {}, время {:.2f} c.".format(len(sam2_result), end_time - start_time))
 
@@ -198,7 +199,7 @@ def process(operation_mode, source_files, out_path):
                     print("\r  Взяли маску площадью: {}".format(res['area']), end="")
                 else:
                     print("\r  Пропустили маску площадью: {}".format(res['area']), end="")
-            print("Собрали список масок: {}".format(len(mask_list)))
+            print("{}Собрали список масок: {}".format(s.CR_CLEAR_cons, len(mask_list)))
 
             # Формируем выходную маску объединением отобранных
             print("Формируем выходную маску объединением отобранных")
@@ -261,39 +262,38 @@ def process(operation_mode, source_files, out_path):
             SCORE_TRESHOLD = s.SAM2_score_threshold
 
             # Инициализация предиктора
-            predictor = sam2_model.get_predictor(t.get_tool_by_name('model_sam2',
-                                                                    tool_list=Tool_list).model,
-                                                 verbose=s.VERBOSE)
+            predictor = sam2_model.get_predictor(tool_model_sam2.model, verbose=s.VERBOSE)
             if predictor is not None:
                 print("Предиктор инициализирован успешно")
 
-            # TODO: ревизовать ниже
-            gap = int(512 * max(height, width) / max(H, W))
-            print("Размер шага, на который отступать от центра масс масок низкого разрешения: {}".format(gap))
-
             # Получим список кропов масок около центров масс в разрешении 1024
-            c1 = 0
+            print("Готовим список кропов масок вокруг центров в разрешении 1024")
+            #
+            gap = int(512 * max(height, width) / max(H, W))
+            print("  Размер шага, на который отступать от центра масс масок разрешения 1024: {}".format(gap))
+            #
+            counter_crop = 0
             mask1024_center_list = []
             for idx, center in enumerate(center_of_mass_list[:]):
                 Xc, Yc = center
                 X1 = Xc - gap if Xc > gap else 0
                 Y1 = Yc - gap if Yc > gap else 0
-                X2 = Xc + gap if Xc < ww - gap else ww
-                Y2 = Yc + gap if Yc < hh - gap else hh
+                X2 = Xc + gap if Xc < width - gap else width
+                Y2 = Yc + gap if Yc < height - gap else height
                 # print((Xc, Yc), (X1, Y1), (X2, Y2))
 
-                # Берем изображение фрагмента маски вокруг центра
+                # Берем кроп маски вокруг центра
                 mask1024 = mask1024_list[idx]
                 mask1024_center_img = mask1024[Y1:Y2, X1:X2].copy()
                 mask1024_center_list.append(mask1024_center_img)
-                # print(mask1024_center_img.shape)
-                c1 += 1
-            print("Обработали {} масок".format(c1))
+                counter_crop += 1
+            print("Обработали {} масок (собрали кропы вокруг центров)".format(counter_crop))
 
-            #
-            ccc = 0
-            mask_promted_list = []
-            mask_promted_coord_list = []
+            # Цикл обработки кропов (сегментация в оригинальном разрешении вокруг центров)
+            print("Сегментация в оригинальном разрешении вокруг центров")
+            counter_crop = 0
+            mask_promted_list = []        # список получаемых масок
+            mask_promted_coord_list = []  # список координат кропов на текстуре оригинального разрешения
             for idx, center_original in enumerate(center_of_mass_original_list[:]):
                 Xc, Yc = center_original
                 X1 = Xc - 512 if Xc > 512 else 0
@@ -325,8 +325,9 @@ def process(operation_mode, source_files, out_path):
                                                           multimask_output=True)
                 # print(masks.shape)
                 # print(scores.shape)
+                print()
 
-                # Определяем лучший sacore в предикте
+                # Определяем лучший score в предикте
                 best_idx = np.argmax(scores)
                 best_score = scores[best_idx]
 
@@ -336,8 +337,8 @@ def process(operation_mode, source_files, out_path):
                     # print(mask_promted_list[-1].shape)
 
                     #
-                    ccc += 1
-                    print("По score выбрана маска {} из {}; центр: {}, размер: {}, score: {:.2f}".format(ccc,
+                    counter_crop += 1
+                    print("По score выбрана маска {} из {}; центр: {}, размер: {}, score: {:.2f}".format(counter_crop,
                                                                                                          len(center_of_mass_original_list),
                                                                                                          (Xc, Yc),
                                                                                                          mask_promted_list[-1].shape,
@@ -376,7 +377,7 @@ def process(operation_mode, source_files, out_path):
                     #     size=(12, 6))
 
                     #
-                    time.sleep(1)
+                    # time.sleep(1)
 
                     # Сравниваем маски
                     IoU_list = []
@@ -389,9 +390,9 @@ def process(operation_mode, source_files, out_path):
                     # print(mask_promted_list[-1].shape)
 
                     #
-                    ccc += 1
+                    counter_crop += 1
                     # sv.plot_image(mask_promted_list[-1], size=(3, 3))
-                    print("По IoU выбрана маска {} из {}; центр: {}, размер: {}, score: {:.2f}".format(ccc, len(center_of_mass_original_list), (Xc, Yc), mask_promted_list[-1].shape, scores[best_iou_idx]))
+                    print("По IoU выбрана маска {} из {}; центр: {}, размер: {}, score: {:.2f}".format(counter_crop, len(center_of_mass_original_list), (Xc, Yc), mask_promted_list[-1].shape, scores[best_iou_idx]))
 
 
             # Собираем выходную маску в оригинальном разрешении

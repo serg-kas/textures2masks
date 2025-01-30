@@ -159,3 +159,5 @@ CYAN_cons = '\033[36m'
 WHITE_cons = '\033[37m'
 UNDERLINE_cons = '\033[4m'
 RESET_cons = '\033[0m'
+#
+CR_CLEAR_cons = '\r\033[K'
