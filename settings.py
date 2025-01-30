@@ -121,7 +121,8 @@ ALLOWED_TYPES = ALLOWED_IMAGES + ['.pdf']
 
 # Параметры модели SAM2
 SAM2_config_file = "sam2_hiera_l.yaml"
-SAM2_checkpoint_file = "models/sam2_hiera_large.pt"
+# SAM2_checkpoint_file = "models/sam2_hiera_large.pt"
+SAM2_checkpoint_file = "models/sam2.1_hiera_large.pt"
 SAM2_force_cuda = True
 # SAM2_force_cuda = False
 SAM2_iou_threshold = 0.25
