@@ -38,7 +38,8 @@ cd ..
 
 python app.py test  
 
-7. Запуск приложения
+8. Запуск приложения  
+
 python app.py masks  
 
 В папку source_files помещаем файл для обработки (можно несколько)
@@ -47,7 +48,9 @@ python app.py masks
 
 ПРИМЕЧАНИЕ:
 1. Окружение удобнее ставить / активировать с помощью Anaconda
+
 conda create -n py310 -c conda-forge python=3.10 pip  
+
 conda activate py310  
   
 2. Потом необходимые пакеты устанавливать с помощью pip
