@@ -68,12 +68,12 @@ def process(operation_mode, source_files, out_path):
 
         import torch
         if torch.cuda.is_available():
-            print("GPU is available")
-            FORCE_CUDA = True
+            print("GPU доступен, получаем информацию")
+            TEST_CUDA = True
 
             # Получаем версию CUDA
             cuda_version = torch.version.cuda
-            print(f"Версия CUDA: {cuda_version}")
+            print(f"  Версия CUDA: {cuda_version}")
 
             # Получаем индекс первого доступного устройства
             index = torch.cuda.current_device()
@@ -83,30 +83,49 @@ def process(operation_mode, source_files, out_path):
             # print("props", props)
 
             # Выводим информацию об устройстве
-            print(f"Название видеокарты: {props.name}")
-            # print(f"Количество мультипроцессоров: {props.multi_processor_count}")
-            print(f"Объем оперативной памяти: {props.total_memory // (1024 ** 2)} МБ")
-            print(f"CUDA compatibility: {props.major}.{props.minor}")
+            print(f"  Название видеокарты: {props.name}")
+            # print(f"  Количество мультипроцессоров: {props.multi_processor_count}")
+            print(f"  Объем оперативной памяти: {props.total_memory // (1024 ** 2)} МБ")
+            print(f"  CUDA compatibility: {props.major}.{props.minor}")
 
         else:
-            print("GPU is not available")
-            FORCE_CUDA = False
+            print("GPU недоступен")
+            TEST_CUDA = False
 
-        # Инициализируем модель
-        model = None
-        try:
-            print("Запускаем функцию загрузки модели")
-            model = sam2_model.get_model_sam2(s.SAM2_config_file,
-                                              s.SAM2_checkpoint_file,
-                                              force_cuda=FORCE_CUDA,
-                                              verbose=s.VERBOSE)
-        except:
-            print("Ошибка при загрузке модели")
-        #
-        if model is not None:
-            print("Проверка установки успешно завершена")  # TODO: тестовый запуск модели на фейковых данных ?
-        else:
-            print("Проверьте установку программного обеспечения")
+        if TEST_CUDA:
+            # Инициализируем модель на GPU
+            model = None
+            try:
+                print("Запускаем функцию загрузки модели на GPU")
+                model = sam2_model.get_model_sam2(s.SAM2_config_file,
+                                                  s.SAM2_checkpoint_file,
+                                                  force_cuda=True,
+                                                  verbose=s.VERBOSE)
+            except:
+                print("  Ошибка при загрузке модели")
+            #
+            if model is not None:
+                print("  Модель успешно загрузилась на GPU")
+            else:
+                print("  Загрузка модели на GPU не удалась")
+
+            # Инициализируем модель на CPU
+            model = None
+            try:
+                print("Запускаем функцию загрузки модели на CPU")
+                model = sam2_model.get_model_sam2(s.SAM2_config_file,
+                                                  s.SAM2_checkpoint_file,
+                                                  force_cuda=False,
+                                                  verbose=s.VERBOSE)
+            except:
+                print("  Ошибка при загрузке модели")
+            #
+            if model is not None:
+                print("  Модель успешно загрузилась на CPU")
+            else:
+                print("  Загрузка модели на CPU не удалась")
+
+        # TODO: тестовый запуск модели на фейковых данных ?
         #
         time_end = time.time()
         print("Общее время выполнения: {:.1f} с.".format(time_end - time_start))
