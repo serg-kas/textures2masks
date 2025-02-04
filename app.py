@@ -68,7 +68,7 @@ def process(operation_mode, source_files, out_path):
 
         import torch
         if torch.cuda.is_available():
-            print("GPU доступен, получаем информацию")
+            print("GPU доступен, получаем информацию:")
             TEST_CUDA = True
 
             # Получаем версию CUDA
@@ -96,7 +96,7 @@ def process(operation_mode, source_files, out_path):
             # Инициализируем модель на GPU
             model = None
             try:
-                print("Запускаем функцию загрузки модели на GPU")
+                print("Запускаем функцию загрузки модели на GPU:")
                 model = sam2_model.get_model_sam2(s.SAM2_config_file,
                                                   s.SAM2_checkpoint_file,
                                                   force_cuda=True,
@@ -112,7 +112,7 @@ def process(operation_mode, source_files, out_path):
             # Инициализируем модель на CPU
             model = None
             try:
-                print("Запускаем функцию загрузки модели на CPU")
+                print("Запускаем функцию загрузки модели на CPU:")
                 model = sam2_model.get_model_sam2(s.SAM2_config_file,
                                                   s.SAM2_checkpoint_file,
                                                   force_cuda=False,
