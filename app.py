@@ -167,7 +167,11 @@ def process(operation_mode, source_files, out_path):
         #
         time_0 = time.perf_counter()
         counter_img = 0
-        for img in img_list:
+        for img_idx, img in enumerate(img_list):
+            # Имя обрабатываемого файла изображения
+            img_file = img_file_list[img_idx]
+            img_file_base_name = os.path.basename(img_file)
+            print("Обрабатываем изображение из файла: {}".format(img_file_base_name))
             #
             image_bgr_original = img.copy()
             image_rgb_original = cv.cvtColor(image_bgr_original, cv.COLOR_BGR2RGB)
@@ -225,13 +229,25 @@ def process(operation_mode, source_files, out_path):
                 combined_mask = np.logical_or(combined_mask, mask)
             print("Сформировали выходную маску размерности: {}".format(combined_mask.shape))
 
-            # Ресайз к оригинальному разрешению и сохранение результата
+            # Ресайз к оригинальному разрешению и сохранение маски, полученной через раз
             result_mask1024 = w.convert_mask_to_image(combined_mask)
-            result_mask1024_original = cv.resize(result_mask1024, (W, H), interpolation=cv.INTER_LANCZOS4)  # cv.INTER_CUBIC
+            result_mask1024_original_size = cv.resize(result_mask1024, (W, H), interpolation=cv.INTER_LANCZOS4)  # cv.INTER_CUBIC
 
-            out_file_name = os.path.join(out_path, 'result_mask1024.jpg')
-            if cv.imwrite(out_file_name, result_mask1024_original):
-                print("Сохранили в оригинальном разрешении маску, полученную через ресайз от 1024: {}".format(out_file_name))
+            # Имя выходного файла в оригинальном разрешении
+            out_img_base_name_mask1024 = img_file_base_name[:-4] + "_mask_1024.jpg"
+            # Полный путь к выходному файлу
+            out_img_file_mask1024 = os.path.join(out_path, out_img_base_name_mask1024)
+
+            # if cv.imwrite(result_mask1024_original_size, out_img_file_mask1024):
+            #     print("Сохранили в оригинальном разрешении маску, полученную через ресайз от 1024: {}".format(out_img_file_mask1024))
+
+            # Запись изображения
+            try:
+                success = cv.imwrite(out_img_file_mask1024, result_mask1024_original_size)
+                if not success:
+                    print(f'Не удалось сохранить файл {out_img_file_mask1024}')
+            except Exception as e:
+                print(f'Произошла ошибка при сохранении файла: {e}')
 
             # Имеющийся набор масок в разрешении 1024
             mask1024_list = mask_list.copy()
@@ -256,7 +272,7 @@ def process(operation_mode, source_files, out_path):
 
             # Пересчитываем центры масс к оригинальному разрешению
             print("Пересчитываем центры масс к оригинальному разрешению")
-            result_mask_original_centers = result_mask1024_original.copy()
+            result_mask_original_centers = result_mask1024_original_size.copy()
             center_of_mass_original_list = []
             for center in center_of_mass_list:
                 X_1024, Y_1024 = center
@@ -403,10 +419,19 @@ def process(operation_mode, source_files, out_path):
             result_image_final = w.convert_mask_to_image(combined_original_mask)
             # u.show_image_cv(u.img_resize_cv(result_image_final, img_size=1024), title=str(result_image_final.shape))
 
-            file_name = "result_mask_{}x{}.jpg".format(result_image_final.shape[0], result_image_final.shape[1])
-            out_file_name = os.path.join(out_path, file_name)
-            if cv.imwrite(out_file_name, result_image_final):
-                print("Успешно записан файл: {}".format(out_file_name))
+            # Имя выходного файла в оригинальном разрешении
+            out_img_base_name_original_size = img_file_base_name[:-4] + "_mask_W{}xH{}.jpg".format(result_image_final.shape[1],
+                                                                                                   result_image_final.shape[0])
+            # Полный путь к выходному файлу
+            out_img_file_original_size = os.path.join(out_path, out_img_base_name_original_size)
+
+            # Запись изображения
+            try:
+                success = cv.imwrite(out_img_file_original_size, result_image_final)
+                if not success:
+                    print(f'Не удалось сохранить файл {out_img_file_original_size}')
+            except Exception as e:
+                print(f'Произошла ошибка при сохранении файла: {e}')
             #
             counter_img += 1
         #
