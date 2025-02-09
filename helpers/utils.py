@@ -121,32 +121,6 @@ def img_resize_cv(image, img_size=1024):
     return image
 
 
-# def resize_image(image, target_size):
-#     """
-#     Ресайз изображения к target_size по большей стороне
-#
-#     :param image: изображение
-#     :param target_size: целевой размер
-#     :return: обработанное изображение
-#     """
-#     height, width = image.shape[:2]
-#
-#     if width > height:
-#         new_width = target_size
-#         new_height = round(height * (target_size / width))
-#     else:
-#         new_height = target_size
-#         new_width = round(width * (target_size / height))
-#
-#     resized_image = cv.resize(image, (new_width, new_height), interpolation=cv.INTER_AREA)
-#     return resized_image
-
-
-
-
-
-
-
 def image_rotate_cv(image, angle, simple_way=False, resize_to_original=False):
     """
     Функция вращения картинки средствами opencv
