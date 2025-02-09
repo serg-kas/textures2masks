@@ -178,8 +178,8 @@ def process(operation_mode, source_files, out_path):
             print("Сохранили оригинальное разрешение: {}".format((H, W)))
 
             # Ресайз к номинальному разрешению 1024
-            image_bgr = w.resize_image(image_bgr_original, 1024)
-            image_rgb = w.resize_image(image_rgb_original, 1024)
+            image_bgr = u.img_resize_cv(image_bgr_original, 1024)
+            image_rgb = u.img_resize_cv(image_rgb_original, 1024)
             print("Ресайз изображения: {} -> {}".format(image_bgr_original.shape, image_bgr.shape))
 
             # Сохраним размеры изображения номинального разрешения 1024
@@ -204,7 +204,7 @@ def process(operation_mode, source_files, out_path):
             non_overlapping_result = w.find_non_overlapping_masks(sam2_result_sorted,
                                                                   iou_threshold=s.SAM2_iou_threshold)
 
-            # Отбираем маски площадью не менее заданной
+            # Отбираем маски площадью в заданных пределах
             area_min = s.AREA_MIN
             area_max = s.AREA_MAX
             print("Фильтруем маски по площади от {} до {}".format(area_min, area_max))

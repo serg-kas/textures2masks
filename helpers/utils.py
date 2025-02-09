@@ -105,17 +105,46 @@ def img_resize_cv(image, img_size=1024):
     """
     curr_h = image.shape[0]
     curr_w = image.shape[1]
+
     # Рассчитаем коэффициент для изменения размера
     if curr_w > curr_h:
         scale_img = img_size / curr_w
     else:
         scale_img = img_size / curr_h
+
     # Новые размеры изображения
     new_width = int(curr_w * scale_img)
     new_height = int(curr_h * scale_img)
+
     # делаем ресайз к целевым размерам
     image = cv.resize(image, (new_width, new_height), interpolation=cv.INTER_AREA)
     return image
+
+
+# def resize_image(image, target_size):
+#     """
+#     Ресайз изображения к target_size по большей стороне
+#
+#     :param image: изображение
+#     :param target_size: целевой размер
+#     :return: обработанное изображение
+#     """
+#     height, width = image.shape[:2]
+#
+#     if width > height:
+#         new_width = target_size
+#         new_height = round(height * (target_size / width))
+#     else:
+#         new_height = target_size
+#         new_width = round(width * (target_size / height))
+#
+#     resized_image = cv.resize(image, (new_width, new_height), interpolation=cv.INTER_AREA)
+#     return resized_image
+
+
+
+
+
 
 
 def image_rotate_cv(image, angle, simple_way=False, resize_to_original=False):
@@ -484,8 +513,3 @@ def txt_separator(string, n=80, txt='', txt_align='center'):
                 start_txt_pos = (n - len(txt)) // 2
                 out_string = out_string[:start_txt_pos] + txt + out_string[-start_txt_pos:]
                 return out_string
-
-
-# #############################################################
-#                  Функции ...
-# #############################################################

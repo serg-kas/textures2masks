@@ -21,6 +21,7 @@ def get_model_sam2(config_file,
                    verbose=False):
     """
     Загрузка модели из указанного файла
+
     :param config_file: путь к файлу конфигурации модели для загрузки
     :param model_file: путь к файлу чекпоинта модели для загрузки
     :param force_cuda: использовать CUDA
@@ -63,7 +64,8 @@ def get_model_sam2(config_file,
 
 def get_mask_generator(model, verbose=False):
     """
-    Загрузка модели из указанного файла
+    Инициализация генератора масок
+
     :param model: модель
     :param verbose: выводить дополнительную информацию
     :return: model: загруженная модель
@@ -82,13 +84,14 @@ def get_mask_generator(model, verbose=False):
 
 def get_predictor(model, verbose=False):
     """
-    Загрузка модели из указанного файла
+    Инициализация предиктора
+
     :param model: модель
     :param verbose: выводить дополнительную информацию
     :return: model: загруженная модель
     """
     if verbose:
-        print("Инициализируем предиктора")
+        print("Инициализируем предиктор")
     time_0 = time.perf_counter()
     #
     predictor = SAM2ImagePredictor(model)
@@ -97,10 +100,6 @@ def get_predictor(model, verbose=False):
     if verbose:
         print("  Время подготовки предиктора, с: {:.2f}".format(time_1 - time_0))
     return predictor
-
-
-
-
 
 
 
