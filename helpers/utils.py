@@ -487,3 +487,6 @@ def txt_separator(string, n=80, txt='', txt_align='center'):
                 start_txt_pos = (n - len(txt)) // 2
                 out_string = out_string[:start_txt_pos] + txt + out_string[-start_txt_pos:]
                 return out_string
+            else:
+                return None
+
