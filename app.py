@@ -9,21 +9,22 @@ import cv2 as cv
 import os
 import sys
 import time
+from time import perf_counter
 # from datetime import datetime, timezone, timedelta
 # import shutil
 # import requests
 # import threading
 # import io
-# import json
+import json
 # import base64
 # from pprint import pprint, pformat
 # from pprint import pprint
 
 #
 import config
-# import log
 import settings as s
 import tool_case as t
+# import helpers.log
 import helpers.utils as u
 import workflow as w
 import sam2_model
@@ -66,6 +67,8 @@ def process(operation_mode, source_files, out_path):
         print(u.txt_separator('=', s.CONS_COLUMNS,
                               txt=' Тестовый режим ', txt_align='center'))
 
+        print("Пробная инициализация модели")
+
         import torch
         if torch.cuda.is_available():
             print("GPU доступен, получаем информацию:")
@@ -103,12 +106,14 @@ def process(operation_mode, source_files, out_path):
                                                   verbose=s.VERBOSE)
             except:
                 print("  Ошибка при загрузке модели")
+                exit(-1)
             #
             if model is not None:
                 print("  Модель успешно загрузилась на GPU")
             else:
                 print("  Загрузка модели на GPU не удалась")
 
+        else:
             # Инициализируем модель на CPU
             model = None
             try:
@@ -119,14 +124,81 @@ def process(operation_mode, source_files, out_path):
                                                   verbose=s.VERBOSE)
             except:
                 print("  Ошибка при загрузке модели")
+                exit(-1)
             #
             if model is not None:
                 print("  Модель успешно загрузилась на CPU")
             else:
                 print("  Загрузка модели на CPU не удалась")
 
-        # TODO: тестовый запуск модели на фейковых данных ?
+        # Инициализация предиктора
+        predictor = sam2_model.get_predictor(model, verbose=s.VERBOSE)
+        if predictor is not None:
+            print("Предиктор инициализирован успешно")
+        else:
+            print("Ошибка инициализации предиктора")
+            exit(-1)
+
+        # Загружаем изображение
+        img_file_list = u.get_files_by_type(['images/bricks.png'], s.ALLOWED_IMAGES)
+        if len(img_file_list) < 1:
+            print("Не нашли изображение для тестовой обработки")
+            exit(-1)
         #
+        img_list = w.get_images_simple(img_file_list, verbose=s.VERBOSE)
+        img = img_list[0]
+
+        # Имя обрабатываемого файла изображения
+        img_file = img_file_list[0]
+        img_file_base_name = os.path.basename(img_file)
+        print("Обрабатываем изображение из файла: {}".format(img_file_base_name))
+        #
+        image_bgr_original = img.copy()
+        image_rgb_original = cv.cvtColor(image_bgr_original, cv.COLOR_BGR2RGB)
+        print("Загрузили изображение размерности: {}".format(image_bgr_original.shape))
+
+        # Сохраним размеры оригинального изображения
+        H, W = image_bgr_original.shape[:2]
+        print("Сохранили оригинальное разрешение: {}".format((H, W)))
+
+        # Ресайз к номинальному разрешению 1024
+        image_bgr = u.resize_image_cv(image_bgr_original, 1024)
+        image_rgb = u.resize_image_cv(image_rgb_original, 1024)
+        print("Ресайз изображения: {} -> {}".format(image_bgr_original.shape, image_bgr.shape))
+
+        # Сохраним размеры изображения номинального разрешения 1024
+        # height, width = image_rgb.shape[:2]
+
+        # Заносим изображение в модель
+        predictor.set_image(image_rgb)
+
+        # Промт
+        prompt_list = json.load(open('images/bricks_prompt.json'))
+        if prompt_list is not None:
+            print("Используем промт: {}".format(prompt_list))
+        else:
+            print("Не нашли файл промпта")
+            exit(-1)
+
+        # prompt_list [{'type': 'point', 'data': [350, 265], 'label': 1}]
+        prompt = prompt_list[0]
+        input_point = np.array([prompt['data']])
+        # print("input_point", input_point)
+        input_label = np.array([prompt['label']])
+        # print("input_label", input_label)
+
+        print("Тестовый запуск предикта модели на загруженном изображении")
+        start = perf_counter()
+        try:
+            masks, scores, logits = predictor.predict(point_coords=input_point,
+                                                      point_labels=input_label,
+                                                      multimask_output=True)
+        except:
+            print("  Ошибка выполнения в предикторе")
+            exit(-1)
+        stop = perf_counter()
+        print("Предикт выполнен успешно, время: {:.5f} с.".format(stop - start))
+
         time_end = time.time()
         print("Общее время выполнения: {:.1f} с.".format(time_end - time_start))
 
@@ -182,8 +254,8 @@ def process(operation_mode, source_files, out_path):
             print("Сохранили оригинальное разрешение: {}".format((H, W)))
 
             # Ресайз к номинальному разрешению 1024
-            image_bgr = u.img_resize_cv(image_bgr_original, 1024)
-            image_rgb = u.img_resize_cv(image_rgb_original, 1024)
+            image_bgr = u.resize_image_cv(image_bgr_original, 1024)
+            image_rgb = u.resize_image_cv(image_rgb_original, 1024)
             print("Ресайз изображения: {} -> {}".format(image_bgr_original.shape, image_bgr.shape))
 
             # Сохраним размеры изображения номинального разрешения 1024
@@ -243,7 +315,7 @@ def process(operation_mode, source_files, out_path):
 
             # Запись изображения
             try:
-                success = cv.imwrite(out_img_file_mask1024, result_mask1024_original_size)
+                success = cv.imwrite(str(out_img_file_mask1024), result_mask1024_original_size)
                 if not success:
                     print(f'Не удалось сохранить файл {out_img_file_mask1024}')
             except Exception as e:
@@ -345,7 +417,7 @@ def process(operation_mode, source_files, out_path):
                 # print(promt_point)
                 input_point = np.array([promt_point])
                 # print(input_point)
-                input_label = np.ones(input_point.shape[0])  # TODO: ?
+                input_label = np.ones(input_point.shape[0])
                 # print(input_label)
 
                 masks, scores, logits = predictor.predict(point_coords=input_point,
