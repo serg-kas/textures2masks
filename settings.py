@@ -90,11 +90,12 @@ def get_value_from_env(variable, default_value=None, prefix_name="APP_", verbose
 #                        РЕЖИМЫ РАБОТЫ
 # #############################################################
 OPERATION_MODE_LIST = [
-                       'self_test',                  # 0
-                       'workflow_masks',             # 1
-                       'experimental'                # -1
-                       ]
-DEFAULT_MODE = OPERATION_MODE_LIST[-1]  # режим работы по умолчанию
+                       'help',
+                       'self_test',
+                       'workflow_masks',
+                       'experimental'
+]
+DEFAULT_MODE = OPERATION_MODE_LIST[0]  # режим работы по умолчанию
 
 
 # #############################################################
