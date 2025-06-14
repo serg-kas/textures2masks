@@ -202,7 +202,7 @@ def process(operation_mode, source_files, out_path):
         N = 10
         time_list = []
         print("Тестовый запуск предикта модели на загруженном изображении, раз: {}".format(N))
-        for _ in range(N):
+        for n in range(N):
             start = perf_counter()
             try:
                 _, _, _ = predictor.predict(point_coords=input_point,
@@ -212,7 +212,7 @@ def process(operation_mode, source_files, out_path):
                 print("  Ошибка выполнения в предикторе")
                 exit(-1)
             stop = perf_counter()
-            print("  Предикт выполнен успешно, время: {:.5f} с.".format(stop - start))
+            print("  {}.Предикт выполнен успешно, время: {:.5f} с.".format(n + 1, stop - start))
             time_list.append(stop - start)
         print("Среднее время выполнения предикта: {:.2f} с.".format(sum(time_list) / len(time_list)))
 
