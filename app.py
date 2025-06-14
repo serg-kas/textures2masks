@@ -59,6 +59,7 @@ def process(operation_mode, source_files, out_path):
             break
     print('Режим работы, заданный в параметрах командной строки: {}'.format(operation_mode))
 
+
     # ######################### help ##########################
     # Тестовый режим (самопроверка установки)
     # #########################################################
@@ -80,9 +81,9 @@ def process(operation_mode, source_files, out_path):
         print("Пробная инициализация модели")
 
         import torch
-        if torch.cuda.is_available():
+        if torch.cuda.is_available() and s.SAM2_force_cuda:
             print("GPU доступен, получаем информацию:")
-            TEST_CUDA = True
+            CUDA_is_present = True
 
             # Получаем версию CUDA
             cuda_version = torch.version.cuda
@@ -102,10 +103,10 @@ def process(operation_mode, source_files, out_path):
             print(f"  CUDA compatibility: {props.major}.{props.minor}")
 
         else:
-            print("GPU недоступен")
-            TEST_CUDA = False
+            print("GPU недоступен или запрещен в настройках")
+            CUDA_is_present = False
 
-        if TEST_CUDA:
+        if CUDA_is_present:
             # Инициализируем модель на GPU
             model = None
             try:
@@ -115,7 +116,7 @@ def process(operation_mode, source_files, out_path):
                                                   force_cuda=True,
                                                   verbose=s.VERBOSE)
             except:
-                print("  Ошибка при загрузке модели")
+                print("  Ошибка при загрузке модели на GPU")
                 exit(-1)
             #
             if model is not None:
@@ -133,7 +134,7 @@ def process(operation_mode, source_files, out_path):
                                                   force_cuda=False,
                                                   verbose=s.VERBOSE)
             except:
-                print("  Ошибка при загрузке модели")
+                print("  Ошибка при загрузке модели на CPU")
                 exit(-1)
             #
             if model is not None:
@@ -197,29 +198,23 @@ def process(operation_mode, source_files, out_path):
         input_label = np.array([prompt['label']])
         # print("input_label", input_label)
 
-        print("Тестовый запуск предикта модели на загруженном изображении")
-        start = perf_counter()
-        try:
-            masks, scores, logits = predictor.predict(point_coords=input_point,
-                                                      point_labels=input_label,
-                                                      multimask_output=True)
-        except:
-            print("  Ошибка выполнения в предикторе")
-            exit(-1)
-        stop = perf_counter()
-        print("Предикт выполнен успешно, время: {:.5f} с.".format(stop - start))
-
-        print("Повторный запуск предикта модели на загруженном изображении")
-        start = perf_counter()
-        try:
-            masks, scores, logits = predictor.predict(point_coords=input_point,
-                                                      point_labels=input_label,
-                                                      multimask_output=True)
-        except:
-            print("  Ошибка выполнения в предикторе")
-            exit(-1)
-        stop = perf_counter()
-        print("Повторный предикт выполнен успешно, время: {:.5f} с.".format(stop - start))
+        # Запуск
+        N = 10
+        time_list = []
+        print("Тестовый запуск предикта модели на загруженном изображении, раз: {}".format(N))
+        for _ in range(N):
+            start = perf_counter()
+            try:
+                _, _, _ = predictor.predict(point_coords=input_point,
+                                            point_labels=input_label,
+                                            multimask_output=True)
+            except:
+                print("  Ошибка выполнения в предикторе")
+                exit(-1)
+            stop = perf_counter()
+            print("  Предикт выполнен успешно, время: {:.5f} с.".format(stop - start))
+            time_list.append(stop - start)
+        print("Среднее время выполнения предикта: {:.2f} с.".format(sum(time_list) / len(time_list)))
 
         time_end = time.time()
         print("Общее время выполнения: {:.1f} с.".format(time_end - time_start))
@@ -551,6 +546,7 @@ def process(operation_mode, source_files, out_path):
         time_end = time.time()
         if s.VERBOSE:
             print("Общее время выполнения: {:.1f} с.".format(time_end - time_start))
+
 
     # #################### experimental #####№№################
     # Экспериментальный режим для отработки алгоритмов
