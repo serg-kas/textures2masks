@@ -373,7 +373,7 @@ def process(operation_mode, source_files, out_path):
                 #
                 radius = int(5 * W / 1024)
                 result_mask_original_centers = cv.circle(result_mask_original_centers, (X, Y), radius, s.blue, -1)
-            # u.show_image_cv(u.img_resize_cv(result_mask_original_centers, img_size=1024), title=str(result_mask_original_centers.shape))
+            # u.show_image_cv(u.resize_image_cv(result_mask_original_centers, img_size=1024), title=str(result_mask_original_centers.shape))
 
             # Инициализация предиктора
             predictor = sam2_model.get_predictor(tool_model_sam2.model, verbose=s.VERBOSE)
@@ -701,7 +701,7 @@ def process(operation_mode, source_files, out_path):
                 #
                 radius = int(5 * W / 1024)
                 result_mask_original_centers = cv.circle(result_mask_original_centers, (X, Y), radius, s.blue, -1)
-            # u.show_image_cv(u.img_resize_cv(result_mask_original_centers, img_size=1024), title=str(result_mask_original_centers.shape))
+            # u.show_image_cv(u.resize_image_cv(result_mask_original_centers, img_size=1024), title=str(result_mask_original_centers.shape))
 
             # Инициализация предиктора
             predictor = sam2_model.get_predictor(tool_model_sam2.model, verbose=s.VERBOSE)
