@@ -165,3 +165,32 @@ def compute_center_of_mass_cv(binary_mask):
         # Если m00 равно 0, значит маска пустая
         return None
     return cX, cY
+
+
+def calculate_mask_dimensions(mask):
+    """
+    Вычисляет ширину и высоту объекта в бинарной маске.
+
+    Параметры:
+        mask: 2D NumPy array булевых значений (False/True)
+
+    Возвращает:
+        width, height (int, int). Если объект отсутствует, возвращает (0, 0).
+    """
+    # Найти координаты всех пикселей объекта (True)
+    y_coords, x_coords = np.where(mask)
+
+    # Если объект не найден
+    if len(y_coords) == 0:
+        return 0, 0
+
+    # Вычислить границы bounding box
+    y_min, y_max = np.min(y_coords), np.max(y_coords)
+    x_min, x_max = np.min(x_coords), np.max(x_coords)
+
+    # Рассчитать ширину и высоту
+    width = x_max - x_min + 1
+    height = y_max - y_min + 1
+
+    return width, height
+

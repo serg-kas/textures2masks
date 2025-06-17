@@ -678,13 +678,23 @@ def process(operation_mode, source_files, out_path):
                 center_of_mass_list.append(w.compute_center_of_mass_cv(binary_mask))
             print("Рассчитали центры масс в разрешении 1024: {}".format(len(mask1024_list)))
 
+            # TODO: Максимальный размер маски в разрешении 1024, которая поместится в 1024 в оригинальном разрешении
+            max_mask_size_1024 = int(1024 * max(height, width) / max(H, W))
+            print("Максимальный размер маски в разрешении 1024, которая поместится в окно 1024 в оригинальном разрешении: {}".format(max_mask_size_1024))
+
             # Визуализируем рассчитанные центры масс в разрешении 1024
             # result_mask1024_centers = result_mask1024.copy()
-            # for center in center_of_mass_list:
+            # for idx, center in enumerate(center_of_mass_list[:]):
+            # # for center in center_of_mass_list:
             #     X, Y = center
             #     X = int(X)
             #     Y = int(Y)
-            #     result_mask1024_centers = cv.circle(result_mask1024_centers, (X, Y), 5, s.red, -1)
+            #     mask_w, mask_h = w.calculate_mask_dimensions(mask1024_list[idx])
+            #     mask_size = max(mask_w, mask_h)
+            #     if mask_size <= max_mask_size_1024:
+            #         result_mask1024_centers = cv.circle(result_mask1024_centers, (X, Y), 5, s.green, -1)
+            #     else:
+            #         result_mask1024_centers = cv.circle(result_mask1024_centers, (X, Y), 5, s.red, -1)
             # u.show_image_cv(result_mask1024_centers, title=str(result_mask1024_centers.shape))
 
             # Пересчитываем центры масс к оригинальному разрешению
