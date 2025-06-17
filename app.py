@@ -516,7 +516,7 @@ def process(operation_mode, source_files, out_path):
 
             # Запись изображения
             try:
-                success = cv.imwrite(out_img_file_original_size, result_image_final)
+                success = cv.imwrite(str(out_img_file_original_size), result_image_final)
                 if not success:
                     print(f'Не удалось сохранить файл {out_img_file_original_size}')
             except Exception as e:
@@ -548,10 +548,10 @@ def process(operation_mode, source_files, out_path):
             print("Общее время выполнения: {:.1f} с.".format(time_end - time_start))
 
 
-    # #################### experimental #####№№################
+    # ######################## dev1 #####№####№################
     # Экспериментальный режим для отработки алгоритмов
     # #########################################################
-    if operation_mode == 'experimental':
+    if operation_mode == 'dev1':
         # Загружаем только изображения
         img_file_list = u.get_files_by_type(source_files, s.ALLOWED_IMAGES)
         if len(img_file_list) < 1:
