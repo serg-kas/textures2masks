@@ -191,6 +191,20 @@ def calculate_mask_dimensions(mask):
     # Рассчитать ширину и высоту
     width = x_max - x_min + 1
     height = y_max - y_min + 1
-
     return width, height
+
+
+def calculate_mask_dimensions_cv(mask):
+    """
+    Маска должна быть бинарным изображением
+    """
+    contours, _ = cv.findContours(
+        mask.astype(np.uint8),
+        cv.RETR_EXTERNAL,
+        cv.CHAIN_APPROX_SIMPLE
+    )
+    if not contours:
+        return 0, 0
+    x, y, w, h = cv.boundingRect(contours[0])
+    return w, h
 
