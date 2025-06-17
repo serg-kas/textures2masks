@@ -208,3 +208,111 @@ def calculate_mask_dimensions_cv(mask):
     x, y, w, h = cv.boundingRect(contours[0])
     return w, h
 
+
+def split_into_tiles(image, tile_size=1024, overlap=256):
+    """
+    Разбивает изображение на тайлы с перекрытием.
+
+    Параметры:
+        image: numpy array изображения (H, W, C)
+        tile_size: размер тайла (квадратный)
+        overlap: размер перекрытия между тайлами
+
+    Возвращает:
+        tiles: список тайлов
+        coords: список координат (y1, x1, y2, x2) для каждого тайла
+    """
+    h, w, c = image.shape
+    tiles = []
+    coords = []
+
+    # Рассчитываем шаг (stride)
+    stride = tile_size - overlap
+
+    # Вычисляем количество тайлов по вертикали и горизонтали
+    n_y = int(np.ceil((h - overlap) / stride))
+    n_x = int(np.ceil((w - overlap) / stride))
+
+    for i in range(n_y):
+        for j in range(n_x):
+            # Рассчитываем координаты текущего тайла
+            y1 = max(0, i * stride)
+            x1 = max(0, j * stride)
+            y2 = min(h, y1 + tile_size)
+            x2 = min(w, x1 + tile_size)
+
+            # Если тайл выходит за границы - корректируем
+            pad_y1 = max(0, tile_size - (y2 - y1))
+            pad_x1 = max(0, tile_size - (x2 - x1))
+
+            # Вырезаем тайл
+            tile = image[y1:y2, x1:x2]
+
+            # Если нужно - добавляем паддинг
+            if pad_y1 > 0 or pad_x1 > 0:
+                tile = np.pad(tile,
+                              ((0, pad_y1), (0, pad_x1), (0, 0)),
+                              mode='constant')
+
+            tiles.append(tile)
+            coords.append((y1, x1, y2, x2))
+    return tiles, coords
+
+
+def merge_tiles(tiles, coords, original_shape, overlap=256):
+    """
+    Склеивает обработанные тайлы в целое изображение с учетом перекрытий.
+
+    Параметры:
+        tiles: список обработанных тайлов
+        coords: список координат (y1, x1, y2, x2)
+        original_shape: форма исходного изображения (H, W, C)
+        overlap: размер перекрытия между тайлами
+
+    Возвращает:
+        merged: склеенное изображение
+        weight_map: карта весов для отладки
+    """
+    h, w, c = original_shape
+    merged = np.zeros((h, w, c), dtype=np.float32)
+    weight_map = np.zeros((h, w), dtype=np.float32)
+
+    # Создаем весовое окно (линейное затухание)
+    window = np.ones((overlap * 2, overlap * 2), dtype=np.float32)
+
+    # Линейное затухание от центра к краям
+    for i in range(overlap * 2):
+        for j in range(overlap * 2):
+            dist_i = min(i, overlap * 2 - 1 - i) / (overlap - 1)
+            dist_j = min(j, overlap * 2 - 1 - j) / (overlap - 1)
+            window[i, j] = min(dist_i, dist_j, 1.0)
+
+    # Обрабатываем каждый тайл
+    for tile, (y1, x1, y2, x2) in zip(tiles, coords):
+        tile_h, tile_w = y2 - y1, x2 - x1
+        tile = tile[:tile_h, :tile_w]  # Обрезаем паддинг если был
+
+        # Создаем весовую маску для тайла
+        weights = np.ones(tile.shape[:2], dtype=np.float32)
+
+        # Применяем весовое окно к перекрытиям
+        if y1 > 0:  # Верхний край
+            weights[:overlap] *= window[overlap:, :tile_w][:, :, None]
+        if y2 < h:  # Нижний край
+            weights[-overlap:] *= window[:overlap, :tile_w][:, :, None]
+        if x1 > 0:  # Левый край
+            weights[:, :overlap] *= window[:tile_h, overlap:][:, :, None]
+        if x2 < w:  # Правый край
+            weights[:, -overlap:] *= window[:tile_h, :overlap][:, :, None]
+
+        # Добавляем тайл к результату
+        merged[y1:y2, x1:x2] += tile * weights
+        weight_map[y1:y2, x1:x2] += weights.squeeze()
+
+    # Нормализуем по весам (избегаем деления на 0)
+    weight_map[weight_map == 0] = 1
+    merged /= weight_map[..., None]
+    return merged.astype(np.uint8), weight_map
+
+
+
