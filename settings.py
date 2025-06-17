@@ -93,6 +93,7 @@ OPERATION_MODE_LIST = [
                        'help',
                        'self_test',
                        'workflow_masks',
+                       'tiling',
                        'dev1'
 ]
 DEFAULT_MODE = OPERATION_MODE_LIST[0]  # режим работы по умолчанию

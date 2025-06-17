@@ -548,6 +548,61 @@ def process(operation_mode, source_files, out_path):
             print("Общее время выполнения: {:.1f} с.".format(time_end - time_start))
 
 
+    # ######################## tiling #####№####№################
+    # Отработка тайлинга
+    # #########################################################
+    if operation_mode == 'tiling':
+        # Загружаем только изображения
+        img_file_list = u.get_files_by_type(source_files, s.ALLOWED_IMAGES)
+        if len(img_file_list) < 1:
+            print("Не нашли изображений для обработки")
+        #
+        img_list = w.get_images_simple(img_file_list, verbose=s.VERBOSE)
+
+        # #############################################
+        # Обрабатываем файлы из списка
+        # #############################################
+        print(u.txt_separator('=', s.CONS_COLUMNS,
+                              txt=' Обрабатываем файлы из списка ', txt_align='center'))
+        #
+        time_0 = time.perf_counter()
+        counter_img = 0
+        for img_idx, img in enumerate(img_list):
+            # Имя обрабатываемого файла изображения
+            img_file = img_file_list[img_idx]
+            img_file_base_name = os.path.basename(img_file)
+            print("Обрабатываем изображение из файла: {}".format(img_file_base_name))
+            #
+            image_bgr_original = img.copy()
+            # image_rgb_original = cv.cvtColor(image_bgr_original, cv.COLOR_BGR2RGB)
+            print("Загрузили изображение размерности: {}".format(image_bgr_original.shape))
+
+            # Сохраним размеры оригинального изображения
+            H, W = image_bgr_original.shape[:2]
+            print("Сохранили оригинальное разрешение: {}".format((H, W)))
+
+            tiles_list, coords_list = w.split_into_tiles(image_bgr_original, tile_size=1024, overlap=256)
+            print("Изображение {} разбито на {} тайлов".format(img_file, len(tiles_list)))
+
+            for idx, tile in enumerate(tiles_list):
+                # Имя выходного файла тайла
+                out_tile_base_name = img_file_base_name[:-4] + f"_tile_{idx}.jpg"
+                # Полный путь к выходному файлу
+                out_tile_file = os.path.join(out_path, out_tile_base_name)
+                #
+                if cv.imwrite(str(out_tile_file), tile):
+                    print("  Сохранили тайл: {}".format(out_tile_file))
+
+        time_1 = time.perf_counter()
+        print("Обработали изображений: {}, время {:.2f} с.".format(len(img_file_list),
+                                                                   time_1 - time_0))
+        #
+        time_end = time.time()
+        if s.VERBOSE:
+            print("Общее время выполнения: {:.1f} с.".format(time_end - time_start))
+
+
+
     # ######################## dev1 #####№####№################
     # Экспериментальный режим для отработки алгоритмов
     # #########################################################
