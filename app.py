@@ -18,7 +18,7 @@ from time import perf_counter
 import json
 # import base64
 # from pprint import pprint, pformat
-# from pprint import pprint
+from pprint import pprint
 
 #
 import config
@@ -68,7 +68,7 @@ def process(operation_mode, source_files, out_path):
                               txt=' Тестовый режим ', txt_align='center'))
 
         print("Предусмотренные режимы работы:")
-        print(s.OPERATION_MODE_LIST)
+        pprint(s.OPERATION_MODE_DICT)
 
 
     # ######################### test ##########################
@@ -327,13 +327,15 @@ def process(operation_mode, source_files, out_path):
             # Полный путь к выходному файлу
             out_img_file_mask1024 = os.path.join(out_path, out_img_base_name_mask1024)
 
-            # if cv.imwrite(result_mask1024_original_size, out_img_file_mask1024):
-            #     print("Сохранили в оригинальном разрешении маску, полученную через ресайз от 1024: {}".format(out_img_file_mask1024))
-
             # Запись изображения
+            # if cv.imwrite(str(out_img_file_mask1024), result_mask1024_original_size):
+            #     print("Сохранили в оригинальном разрешении маску, полученную через ресайз от 1024: {}".format(out_img_file_mask1024))
             try:
                 success = cv.imwrite(str(out_img_file_mask1024), result_mask1024_original_size)
-                if not success:
+                if success:
+                    print("Сохранили в оригинальном разрешении маску, полученную через ресайз от 1024: {}".format(
+                        out_img_file_mask1024))
+                else:
                     print(f'Не удалось сохранить файл {out_img_file_mask1024}')
             except Exception as e:
                 print(f'Произошла ошибка при сохранении файла: {e}')
@@ -358,6 +360,42 @@ def process(operation_mode, source_files, out_path):
             #     Y = int(Y)
             #     result_mask1024_centers = cv.circle(result_mask1024_centers, (X, Y), 5, s.red, -1)
             # u.show_image_cv(result_mask1024_centers, title=str(result_mask1024_centers.shape))
+
+            # TODO: Максимальный размер маски в разрешении 1024, которая поместится в 1024 в оригинальном разрешении
+            max_mask_size_1024 = int(1024 * max(height, width) / max(H, W))
+            print(
+                "Максимальный размер маски в разрешении 1024, которая поместится в окно 1024 в оригинальном разрешении: {}".format(
+                    max_mask_size_1024))
+
+            result_mask1024_centers = result_mask1024.copy()
+            for idx, center in enumerate(center_of_mass_list[:]):
+            # for center in center_of_mass_list:
+                X, Y = center
+                X = int(X)
+                Y = int(Y)
+                mask_w, mask_h = w.calculate_mask_dimensions(mask1024_list[idx])
+                mask_size = max(mask_w, mask_h)
+                if mask_size <= max_mask_size_1024:
+                    result_mask1024_centers = cv.circle(result_mask1024_centers, (X, Y), 5, s.green, -1)
+                else:
+                    result_mask1024_centers = cv.circle(result_mask1024_centers, (X, Y), 5, s.red, -1)
+            # u.show_image_cv(result_mask1024_centers, title=str(result_mask1024_centers.shape))
+
+            # Имя выходного файла центров масс масок в разрешении 1024
+            out_img_base_name_mask1024_centers = img_file_base_name[:-4] + "_mask_centers_1024.jpg"
+            # Полный путь к выходному файлу
+            out_img_file_centers_mask1024 = os.path.join(out_path, out_img_base_name_mask1024_centers)
+
+            # Запись изображения центров масс в разрешении 1024
+            try:
+                success = cv.imwrite(str(out_img_file_centers_mask1024), result_mask1024_centers)
+                if success:
+                    print(
+                        "Сохранили визуализацию центров масс масок в разрешении 1024: {}".format(out_img_file_centers_mask1024))
+                else:
+                    print(f'Не удалось сохранить файл {out_img_file_centers_mask1024}')
+            except Exception as e:
+                print(f'Произошла ошибка при сохранении файла: {e}')
 
             # Пересчитываем центры масс к оригинальному разрешению
             print("Пересчитываем центры масс к оригинальному разрешению")
@@ -517,7 +555,9 @@ def process(operation_mode, source_files, out_path):
             # Запись изображения
             try:
                 success = cv.imwrite(str(out_img_file_original_size), result_image_final)
-                if not success:
+                if success:
+                    print("Сохранили маску, полученную в оригинальном разрешении: {}".format(out_img_file_original_size))
+                else:
                     print(f'Не удалось сохранить файл {out_img_file_original_size}')
             except Exception as e:
                 print(f'Произошла ошибка при сохранении файла: {e}')
