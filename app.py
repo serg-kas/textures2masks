@@ -249,10 +249,10 @@ def process(operation_mode, source_files, out_path):
         print("\nОбщее время выполнения: {:.1f} с.".format(time_end - time_start))
 
 
-    # #################### workflow_masks #####№№################
+    # ################## workflow_baseline #####№№#############
     # Рабочий режим обработки изображения с созданием выходной маски
     # #########################################################
-    if operation_mode == 'workflow_masks':
+    if operation_mode == 'workflow_baseline':
         # Загружаем только изображения
         img_file_list = u.get_files_by_type(source_files, s.ALLOWED_IMAGES)
         if len(img_file_list) < 1:
@@ -326,11 +326,16 @@ def process(operation_mode, source_files, out_path):
             non_overlapping_result = w.find_non_overlapping_masks(sam2_result_sorted,
                                                                   iou_threshold=s.SAM2_iou_threshold)
 
-            # Отбираем маски площадью в заданных пределах
+            # Отбираем маски по площади, берём пределы из настроек
             area_min = s.AREA_MIN
             area_max = s.AREA_MAX
-            print("Фильтруем маски по площади от {} до {}".format(area_min, area_max))
+            # TODO: Опционально пересчитываем пределы площади
+            if s.AUTO_CALCULATE_AREAS:
+                print("Пересчитываем размеры масок для фильтрации")
+                area_min = s.AREA_MIN
+                area_max = s.AREA_MAX
 
+            print("Фильтруем маски по площади от {} до {}".format(area_min, area_max))
             mask_list = []
             for res in non_overlapping_result:
                 if area_min < res['area'] < area_max:

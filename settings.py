@@ -100,8 +100,8 @@ def get_value_from_env(variable, default_value=None, prefix_name="APP_", verbose
 OPERATION_MODE_DICT = {
                        'help':'Общая информация',
                        'self_test':'Тест окружения',
-                       'workflow_base':'Старый алгоритм',
-                       'workflow_tiling':'Алгоритм на основе тайлинга - в разработке'
+                       'workflow_baseline':'Базовый алгоритм',
+                       'workflow_tiling':'Алгоритм на основе тайлинга - В РАЗРАБОТКЕ'
 }
 OPERATION_MODE_LIST = list(OPERATION_MODE_DICT.keys())
 DEFAULT_MODE = OPERATION_MODE_LIST[0]  # режим работы по умолчанию
@@ -143,6 +143,7 @@ SAM2_score_threshold = 0.95
 # #############################################################
 #                     ПАРАМЕТРЫ ОБРАБОТКИ
 # #############################################################
+AUTO_CALCULATE_AREAS = get_value_from_env("AUTO_CALCULATE_AREAS", default_value=True)
 AREA_MIN = get_value_from_env("AREA_MIN", default_value=100)
 AREA_MAX = get_value_from_env("AREA_MAX", default_value=int(1024 * 1024 * 0.8))
 
