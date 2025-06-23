@@ -100,9 +100,8 @@ def get_value_from_env(variable, default_value=None, prefix_name="APP_", verbose
 OPERATION_MODE_DICT = {
                        'help':'Общая информация',
                        'self_test':'Тест окружения',
-                       'workflow_masks':'Старый алгоритм ',
-                       'tiling':'?',
-                       'dev1':'в разработке'
+                       'workflow_base':'Старый алгоритм',
+                       'workflow_tiling':'Алгоритм на основе тайлинга - в разработке'
 }
 OPERATION_MODE_LIST = list(OPERATION_MODE_DICT.keys())
 DEFAULT_MODE = OPERATION_MODE_LIST[0]  # режим работы по умолчанию
