@@ -2310,3 +2310,5 @@ def calculate_hist_chi_square_cv(image, threshold=10):
     # Если значение выше порога, требуется выравнивание
     return chi_square > threshold, chi_square
 
+
+

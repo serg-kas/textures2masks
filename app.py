@@ -322,18 +322,18 @@ def process(operation_mode, source_files, out_path):
             # Сортируем результаты по увеличению площади маски
             sam2_result_sorted = sorted(sam2_result, key=lambda x: x['area'], reverse=False)
 
-            # Отбираем не пересекающиеся маски (по установленному порогу)
+            # TODO: Отбираем не пересекающиеся маски (по установленному порогу) ?
             non_overlapping_result = w.find_non_overlapping_masks(sam2_result_sorted,
                                                                   iou_threshold=s.SAM2_iou_threshold)
 
             # Отбираем маски по площади, берём пределы из настроек
             area_min = s.AREA_MIN
             area_max = s.AREA_MAX
-            # TODO: Опционально пересчитываем пределы площади
-            if s.AUTO_CALCULATE_AREAS:
-                print("Пересчитываем размеры масок для фильтрации")
-                area_min = s.AREA_MIN
-                area_max = s.AREA_MAX
+            # # TODO: Опционально пересчитываем пределы площади
+            # if s.AUTO_CALCULATE_AREAS:
+            #     print("Пересчитываем размеры масок для фильтрации")
+            #     area_min = s.AREA_MIN
+            #     area_max = s.AREA_MAX
 
             print("Фильтруем маски по площади от {} до {}".format(area_min, area_max))
             mask_list = []
