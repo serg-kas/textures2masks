@@ -365,8 +365,6 @@ def process(operation_mode, source_files, out_path):
             out_img_file_mask1024 = os.path.join(out_path, out_img_base_name_mask1024)
 
             # Запись изображения
-            # if cv.imwrite(str(out_img_file_mask1024), result_mask1024_original_size):
-            #     print("Сохранили в оригинальном разрешении маску, полученную через ресайз от 1024: {}".format(out_img_file_mask1024))
             try:
                 success = cv.imwrite(str(out_img_file_mask1024), result_mask1024_original_size)
                 if success:
@@ -379,8 +377,6 @@ def process(operation_mode, source_files, out_path):
 
             # Имеющийся набор масок в разрешении 1024
             mask1024_list = mask_list.copy()
-            # if len(mask1024_list) > 0:
-            #     print("Имеем набор {} масок в разрешении {}".format(len(mask1024_list), mask1024_list[0].shape))
 
             # Рассчитаем центры масс масок
             center_of_mass_list = []
@@ -390,23 +386,13 @@ def process(operation_mode, source_files, out_path):
             print("Рассчитали центры масс в разрешении 1024: {}".format(len(mask1024_list)))
 
             # Визуализируем рассчитанные центры масс в разрешении 1024
-            # result_mask1024_centers = result_mask1024.copy()
-            # for center in center_of_mass_list:
-            #     X, Y = center
-            #     X = int(X)
-            #     Y = int(Y)
-            #     result_mask1024_centers = cv.circle(result_mask1024_centers, (X, Y), 5, s.red, -1)
-            # u.show_image_cv(result_mask1024_centers, title=str(result_mask1024_centers.shape))
-
-            # TODO: Максимальный размер маски в разрешении 1024, которая поместится в 1024 в оригинальном разрешении
+            # Максимальный размер маски в разрешении 1024, которая поместится в 1024 пиксела в оригинальном разрешении
             max_mask_size_1024 = int(1024 * max(height, width) / max(H, W))
-            print(
-                "Максимальный размер маски в разрешении 1024, которая поместится в окно 1024 в оригинальном разрешении: {}".format(
-                    max_mask_size_1024))
+            print("Максимальный размер маски в разрешении 1024, "
+                  "которая поместится в окно 1024 пиксела в оригинальном разрешении: {}".format(max_mask_size_1024))
 
             result_mask1024_centers = result_mask1024.copy()
             for idx, center in enumerate(center_of_mass_list[:]):
-            # for center in center_of_mass_list:
                 X, Y = center
                 X = int(X)
                 Y = int(Y)
@@ -659,7 +645,7 @@ def process(operation_mode, source_files, out_path):
             print("Сохранили оригинальное разрешение: {}".format((H, W)))
 
             tiles_list, coords_list = w.split_into_tiles(image_bgr_original, tile_size=1024, overlap=256)
-            print("Изображение {} разбито на {} тайлов".format(img_file, len(tiles_list)))
+            print("Изображение {} разбито на фрагменты (тайлы): {}".format(img_file, len(tiles_list)))
 
             for idx, tile in enumerate(tiles_list):
                 # Имя выходного файла тайла
