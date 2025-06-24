@@ -18,7 +18,7 @@ from time import perf_counter
 import json
 # import base64
 # from pprint import pprint, pformat
-from pprint import pprint
+# from pprint import pprint
 
 #
 import config
@@ -61,16 +61,19 @@ def process(operation_mode, source_files, out_path):
 
 
     # ######################### help ##########################
-    # Вывод списка режимов работы
-    # TODO: Вывод краткой справки по режимам и параметрам
+    # Вывод списка режимов работы и другой информации
     # #########################################################
     if operation_mode == 'help':
         print(u.txt_separator('=', s.CONS_COLUMNS,
-                              txt=' Общая информация ', txt_align='center'))
+                              txt=' Справочная информация ', txt_align='center'))
 
         print("Предусмотренные режимы работы:")
-        pprint(s.OPERATION_MODE_DICT)
+        # Печатаем элементы с выравниванием
+        max_key_length = max(len(key) for key in s.OPERATION_MODE_DICT)
+        for key, value in s.OPERATION_MODE_DICT.items():
+            print(f"{key:<{max_key_length}} : {value}")
 
+        # TODO: Дополнить информацию по режимам и параметрам
 
     # ######################### test ##########################
     # Тестовый режим: самопроверка установки, тест скорости
@@ -322,14 +325,14 @@ def process(operation_mode, source_files, out_path):
             # Сортируем результаты по увеличению площади маски
             sam2_result_sorted = sorted(sam2_result, key=lambda x: x['area'], reverse=False)
 
-            # TODO: Отбираем не пересекающиеся маски (по установленному порогу) ?
+            # Отбираем не пересекающиеся маски (по установленному порогу) TODO: проверить алгоритм
             non_overlapping_result = w.find_non_overlapping_masks(sam2_result_sorted,
                                                                   iou_threshold=s.SAM2_iou_threshold)
 
             # Отбираем маски по площади, берём пределы из настроек
             area_min = s.AREA_MIN
             area_max = s.AREA_MAX
-            # # TODO: Опционально пересчитываем пределы площади
+            # TODO: Опционально пересчитываем пределы площади
             # if s.AUTO_CALCULATE_AREAS:
             #     print("Пересчитываем размеры масок для фильтрации")
             #     area_min = s.AREA_MIN
