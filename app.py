@@ -787,13 +787,52 @@ def process(operation_mode, source_files, out_path):
                 print("Обрабатываем тайл {} размерности {}".format(idx, mask_tile.shape))
                 curr_tile = tiles_list[idx]
 
-                # Заносим изображение в модель
+                # 1. Подготовка маски-промпта
+                custom_mask = cv.cvtColor(mask_tile, cv.COLOR_BGR2GRAY)
+                low_res_mask = cv.resize(custom_mask.astype(np.uint8), (256, 256),
+                                         interpolation=cv.INTER_NEAREST)
+
+                # 2. Нормализация: [0, 255] -> [0, 1]
+                mask_input = (low_res_mask > 128).astype(np.float32)
+
+                # 3. Установка изображения
                 predictor.set_image(curr_tile)
 
-                # Промт
+                # 4. Предсказание с использованием маски как промпта
+                masks, scores, _ = predictor.predict(
+                    point_coords=None,
+                    point_labels=None,
+                    box=None,
+                    mask_input=mask_input[None, :, :],  # Добавляем batch dimension
+                    multimask_output=True,  # Возвращаем только лучшую маску
+                )
+                # print("masks", masks.shape)
 
+                iou_list = []
+                for pred_mask in masks:
+                    # print(pred_mask.shape, custom_mask.shape)
+                    iou = w.calculate_mask_iou(custom_mask, pred_mask)
+                    iou_list.append(iou)
+                # print("iou_list", iou_list)
+                mask_idx = np.argmax(iou_list)
+                # print("mask_idx", mask_idx)
 
+                masks_img = masks[mask_idx].astype(np.uint8) * 255
+                masks_img = cv.cvtColor(masks_img, cv.COLOR_GRAY2BGR)
+                processed_mask_list.append(masks_img)
 
+            # Сборка выходного изображения маски
+            image_bgr_new = w.assemble_image(processed_mask_list,
+                                             coords_list,
+                                             original_shape=image_bgr_original.shape,
+                                             overlap=256)
+
+            # Имя выходного файла тайла
+            out_new_base_name = img_file_base_name[:-4] + "_tiling_mask.jpg"
+            # Полный путь к выходному файлу
+            out_new_file = os.path.join(out_path, out_new_base_name)
+            if cv.imwrite(str(out_new_file), image_bgr_new):
+                print("  Сохранили выходной файл: {}".format(out_new_file))
 
 
 
