@@ -200,14 +200,14 @@ def process(operation_mode, source_files, out_path):
         N = 5
         print("\nТестовый запуск предикта модели на однократно загруженном изображении, раз: {}".format(N))
         # Загружаем изображение в модель
-        start_loading = perf_counter()
+        start_loading1 = perf_counter()
         predictor.set_image(image_rgb)
-        stop_loading = perf_counter()
-        print("  Изображение загружено в модель, время: {:.5f} с.".format(stop_loading - start_loading))
+        stop_loading1 = perf_counter()
+        print("  Изображение загружено в модель, время: {:.5f} с.".format(stop_loading1 - start_loading1))
         #
         time_list = []
         for n in range(N):
-            start = perf_counter()
+            start1 = perf_counter()
             try:
                 _, _, _ = predictor.predict(point_coords=input_point,
                                             point_labels=input_label,
@@ -215,9 +215,9 @@ def process(operation_mode, source_files, out_path):
             except:
                 print("  Ошибка выполнения в предикторе")
                 exit(-1)
-            stop = perf_counter()
-            print("  {}.Предикт выполнен успешно, время: {:.5f} с.".format(n+1, stop - start))
-            time_list.append(stop - start)
+            stop1 = perf_counter()
+            print("  {}.Предикт выполнен успешно, время: {:.5f} с.".format(n+1, stop1 - start1))
+            time_list.append(stop1 - start1)
         print("Среднее время выполнения предикта: {:.2f} с.".format(sum(time_list) / len(time_list)))
 
         # Запуск с загрузкой изображения
@@ -227,12 +227,12 @@ def process(operation_mode, source_files, out_path):
         time_list = []
         for n in range(N):
             # Загружаем изображение в модель
-            start_loading = perf_counter()
+            start_loading2 = perf_counter()
             predictor.set_image(image_rgb)
-            stop_loading = perf_counter()
-            print("  {}.Изображение загружено в модель, время: {:.5f} с.".format(n+1, stop_loading - start_loading))
+            stop_loading2 = perf_counter()
+            print("  {}.Изображение загружено в модель, время: {:.5f} с.".format(n+1, stop_loading2 - start_loading2))
 
-            start = perf_counter()
+            start2 = perf_counter()
             try:
                 _, _, _ = predictor.predict(point_coords=input_point,
                                             point_labels=input_label,
@@ -240,9 +240,9 @@ def process(operation_mode, source_files, out_path):
             except:
                 print("  Ошибка выполнения в предикторе")
                 exit(-1)
-            stop = perf_counter()
-            print("    Предикт выполнен успешно, время: {:.5f} с.".format(stop - start))
-            time_list.append(stop - start)
+            stop2 = perf_counter()
+            print("    Предикт выполнен успешно, время: {:.5f} с.".format(stop2 - start2))
+            time_list.append(stop2 - start2)
         print("Среднее время выполнения предикта: {:.2f} с.".format(sum(time_list) / len(time_list)))
 
         time_end = time.time()
