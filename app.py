@@ -623,6 +623,23 @@ def process(operation_mode, source_files, out_path):
         img_list = w.get_images_simple(img_file_list, verbose=s.VERBOSE)
 
         # #############################################
+        # Загрузка МОДЕЛЕЙ и сохранение их в список
+        # экземпляров КЛАССА Tool
+        # #############################################
+        print(u.txt_separator('=', s.CONS_COLUMNS,
+                              txt=' Загрузка и сохранение моделей ', txt_align='center'))
+
+        # Загружаем модель SAM2 в класс Tool
+        Tool_list = [t.Tool('model_sam2',
+                            sam2_model.get_model_sam2(s.SAM2_config_file,
+                                                      s.SAM2_checkpoint_file,
+                                                      force_cuda=s.SAM2_force_cuda,
+                                                      verbose=s.VERBOSE),
+                            tool_type='model')]
+        #
+        tool_model_sam2 = t.get_tool_by_name('model_sam2', tool_list=Tool_list)
+
+        # #############################################
         # Обрабатываем файлы из списка
         # #############################################
         print(u.txt_separator('=', s.CONS_COLUMNS,
@@ -637,40 +654,133 @@ def process(operation_mode, source_files, out_path):
             print("Обрабатываем изображение из файла: {}".format(img_file_base_name))
             #
             image_bgr_original = img.copy()
-            # image_rgb_original = cv.cvtColor(image_bgr_original, cv.COLOR_BGR2RGB)
+            image_rgb_original = cv.cvtColor(image_bgr_original, cv.COLOR_BGR2RGB)
             print("Загрузили изображение размерности: {}".format(image_bgr_original.shape))
 
             # Сохраним размеры оригинального изображения
             H, W = image_bgr_original.shape[:2]
             print("Сохранили оригинальное разрешение: {}".format((H, W)))
 
+            # Ресайз к номинальному разрешению 1024
+            image_bgr = u.resize_image_cv(image_bgr_original, 1024)
+            image_rgb = u.resize_image_cv(image_rgb_original, 1024)
+            print("Ресайз изображения: {} -> {}".format(image_bgr_original.shape, image_bgr.shape))
+
+            # Сохраним размеры изображения номинального разрешения 1024
+            height, width = image_rgb.shape[:2]
+
+            # Инициализация генератора масок
+            mask_generator = sam2_model.get_mask_generator(tool_model_sam2.model, verbose=s.VERBOSE)
+            if mask_generator is not None:
+                print("Успешно инициализирован генератор масок")
+
+            # Запуск генератора масок на изображении 1024
+            start_time = time.time()
+            sam2_result = mask_generator.generate(image_rgb)
+            end_time = time.time()
+            tool_model_sam2.counter += 1
+            print("Получили список масок: {}, время {:.2f} c.".format(len(sam2_result), end_time - start_time))
+
+            # Сортируем результаты по увеличению площади маски
+            sam2_result_sorted = sorted(sam2_result, key=lambda x: x['area'], reverse=False)
+
+            # Отбираем не пересекающиеся маски (по установленному порогу) TODO: проверить алгоритм
+            non_overlapping_result = w.find_non_overlapping_masks(sam2_result_sorted,
+                                                                  iou_threshold=s.SAM2_iou_threshold)
+
+            # Отбираем маски по площади, берём пределы из настроек
+            area_min = s.AREA_MIN
+            area_max = s.AREA_MAX
+            # TODO: Опционально пересчитываем пределы площади
+            # if s.AUTO_CALCULATE_AREAS:
+            #     print("Пересчитываем размеры масок для фильтрации")
+            #     area_min = s.AREA_MIN
+            #     area_max = s.AREA_MAX
+
+            print("Фильтруем маски по площади от {} до {}".format(area_min, area_max))
+            mask_list = []
+            for res in non_overlapping_result:
+                if area_min < res['area'] < area_max:
+                    mask_list.append(res['segmentation'])
+                    print("\r  Взяли маску площадью: {}".format(res['area']), end="")
+                else:
+                    print("\r  Пропустили маску площадью: {}".format(res['area']), end="")
+            print("{}Собрали список масок в разрешении 1024: {}".format(s.CR_CLEAR_cons, len(mask_list)))
+
+            # Формируем выходную маску объединением отобранных
+            print("Формируем выходную маску объединением отобранных")
+            combined_mask = np.zeros((height, width), dtype=bool)
+            for mask in mask_list:
+                combined_mask = np.logical_or(combined_mask, mask)
+            print("Сформировали выходную маску размерности: {}".format(combined_mask.shape))
+
+            # Ресайз к оригинальному разрешению и сохранение маски, полученной через разрешение 1024
+            result_mask1024 = w.convert_mask_to_image(combined_mask)
+            result_mask1024_original_size = cv.resize(result_mask1024, (W, H), interpolation=cv.INTER_LANCZOS4)  # cv.INTER_CUBIC
+
+            # Имя выходного файла в оригинальном разрешении
+            out_img_base_name_mask1024 = img_file_base_name[:-4] + "_mask_1024.jpg"
+            # Полный путь к выходному файлу
+            out_img_file_mask1024 = os.path.join(out_path, out_img_base_name_mask1024)
+
+            # Запись изображения
+            try:
+                success = cv.imwrite(str(out_img_file_mask1024), result_mask1024_original_size)
+                if success:
+                    print("Сохранили в оригинальном разрешении маску, полученную через ресайз от 1024: {}".format(
+                        out_img_file_mask1024))
+                else:
+                    print(f'Не удалось сохранить файл {out_img_file_mask1024}')
+            except Exception as e:
+                print(f'Произошла ошибка при сохранении файла: {e}')
+
+
+            # TODO: разбиение и обработка по тайлам
             tiles_list, coords_list = w.split_into_tiles(image_bgr_original,
                                                          tile_size=1024,
                                                          overlap=256)
             print("Изображение {} разбито на фрагменты (тайлы): {}".format(img_file, len(tiles_list)))
 
-            for idx, tile in enumerate(tiles_list):
+            # for idx, tile in enumerate(tiles_list):
+            #     # Имя выходного файла тайла
+            #     out_tile_base_name = img_file_base_name[:-4] + f"_tile_{idx}.jpg"
+            #     # Полный путь к выходному файлу
+            #     out_tile_file = os.path.join(out_path, out_tile_base_name)
+            #     if cv.imwrite(str(out_tile_file), tile):
+            #         print("  Сохранили тайл: {}".format(out_tile_file))
+
+            # # Обработка каждого тайла
+            # processed_tiles = [cv.cvtColor(tile, cv.COLOR_BGR2RGB) for tile in tiles_list]
+            #
+            # # Сборка выходного изображения
+            # image_bgr_new = w.assemble_image(processed_tiles,
+            #                                  coords_list,
+            #                                  original_shape=image_bgr_original.shape,
+            #                                  overlap=256)
+            # # Имя выходного файла тайла
+            # out_new_base_name = img_file_base_name[:-4] + "_reconstructed.jpg"
+            # # Полный путь к выходному файлу
+            # out_new_file = os.path.join(out_path, out_new_base_name)
+            # if cv.imwrite(str(out_new_file), image_bgr_new):
+            #     print("  Сохранили выходной файл: {}".format(out_new_file))
+
+
+            mask_tiles_list, mask_coords_list = w.split_into_tiles(result_mask1024_original_size,
+                                                                   tile_size=1024,
+                                                                   overlap=256)
+            print("Маска в оригинальном разрешении разбита на фрагменты (тайлы): {}".format(len(mask_tiles_list)))
+
+            for idx, tile in enumerate(mask_tiles_list):
                 # Имя выходного файла тайла
-                out_tile_base_name = img_file_base_name[:-4] + f"_tile_{idx}.jpg"
+                out_tile_base_name = img_file_base_name[:-4] + f"_mask_tile_{idx}.jpg"
                 # Полный путь к выходному файлу
                 out_tile_file = os.path.join(out_path, out_tile_base_name)
                 if cv.imwrite(str(out_tile_file), tile):
-                    print("  Сохранили тайл: {}".format(out_tile_file))
+                    print("  Сохранили тайл маски: {}".format(out_tile_file))
 
-            # Обработка каждого тайла
-            processed_tiles = [cv.cvtColor(tile, cv.COLOR_BGR2RGB) for tile in tiles_list]
 
-            # Сборка выходного изображения
-            image_bgr_new = w.assemble_image(processed_tiles,
-                                             coords_list,
-                                             original_shape=image_bgr_original.shape,
-                                             overlap=256)
-            # Имя выходного файла тайла
-            out_new_base_name = img_file_base_name[:-4] + "_reconstructed.jpg"
-            # Полный путь к выходному файлу
-            out_new_file = os.path.join(out_path, out_new_base_name)
-            if cv.imwrite(str(out_new_file), image_bgr_new):
-                print("  Сохранили выходной файл: {}".format(out_new_file))
+
+
 
         time_1 = time.perf_counter()
         print("Обработали изображений: {}, время {:.2f} с.".format(len(img_file_list),
