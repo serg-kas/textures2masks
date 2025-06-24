@@ -644,7 +644,9 @@ def process(operation_mode, source_files, out_path):
             H, W = image_bgr_original.shape[:2]
             print("Сохранили оригинальное разрешение: {}".format((H, W)))
 
-            tiles_list, coords_list = w.split_into_tiles(image_bgr_original, tile_size=1024, overlap=256)
+            tiles_list, coords_list = w.split_into_tiles(image_bgr_original,
+                                                         tile_size=1024,
+                                                         overlap=256)
             print("Изображение {} разбито на фрагменты (тайлы): {}".format(img_file, len(tiles_list)))
 
             for idx, tile in enumerate(tiles_list):
@@ -652,9 +654,23 @@ def process(operation_mode, source_files, out_path):
                 out_tile_base_name = img_file_base_name[:-4] + f"_tile_{idx}.jpg"
                 # Полный путь к выходному файлу
                 out_tile_file = os.path.join(out_path, out_tile_base_name)
-                #
                 if cv.imwrite(str(out_tile_file), tile):
                     print("  Сохранили тайл: {}".format(out_tile_file))
+
+            # Обработка каждого тайла
+            processed_tiles = [cv.cvtColor(tile, cv.COLOR_BGR2RGB) for tile in tiles_list]
+
+            # Сборка выходного изображения
+            image_bgr_new = w.assemble_image(processed_tiles,
+                                             coords_list,
+                                             original_shape=image_bgr_original.shape,
+                                             overlap=256)
+            # Имя выходного файла тайла
+            out_new_base_name = img_file_base_name[:-4] + "_reconstructed.jpg"
+            # Полный путь к выходному файлу
+            out_new_file = os.path.join(out_path, out_new_base_name)
+            if cv.imwrite(str(out_new_file), image_bgr_new):
+                print("  Сохранили выходной файл: {}".format(out_new_file))
 
         time_1 = time.perf_counter()
         print("Обработали изображений: {}, время {:.2f} с.".format(len(img_file_list),
