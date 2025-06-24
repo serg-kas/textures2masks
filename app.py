@@ -639,6 +639,11 @@ def process(operation_mode, source_files, out_path):
         #
         tool_model_sam2 = t.get_tool_by_name('model_sam2', tool_list=Tool_list)
 
+        # Инициализация предиктора
+        predictor = sam2_model.get_predictor(tool_model_sam2.model, verbose=s.VERBOSE)
+        if predictor is not None:
+            print("Предиктор инициализирован успешно")
+
         # #############################################
         # Обрабатываем файлы из списка
         # #############################################
@@ -740,7 +745,6 @@ def process(operation_mode, source_files, out_path):
                                                          tile_size=1024,
                                                          overlap=256)
             print("Изображение {} разбито на фрагменты (тайлы): {}".format(img_file, len(tiles_list)))
-
             # for idx, tile in enumerate(tiles_list):
             #     # Имя выходного файла тайла
             #     out_tile_base_name = img_file_base_name[:-4] + f"_tile_{idx}.jpg"
@@ -769,14 +773,25 @@ def process(operation_mode, source_files, out_path):
                                                                    tile_size=1024,
                                                                    overlap=256)
             print("Маска в оригинальном разрешении разбита на фрагменты (тайлы): {}".format(len(mask_tiles_list)))
+            # for idx, tile in enumerate(mask_tiles_list):
+            #     # Имя выходного файла тайла
+            #     out_tile_base_name = img_file_base_name[:-4] + f"_mask_tile_{idx}.jpg"
+            #     # Полный путь к выходному файлу
+            #     out_tile_file = os.path.join(out_path, out_tile_base_name)
+            #     if cv.imwrite(str(out_tile_file), tile):
+            #         print("  Сохранили тайл маски: {}".format(out_tile_file))
 
-            for idx, tile in enumerate(mask_tiles_list):
-                # Имя выходного файла тайла
-                out_tile_base_name = img_file_base_name[:-4] + f"_mask_tile_{idx}.jpg"
-                # Полный путь к выходному файлу
-                out_tile_file = os.path.join(out_path, out_tile_base_name)
-                if cv.imwrite(str(out_tile_file), tile):
-                    print("  Сохранили тайл маски: {}".format(out_tile_file))
+            # Обработка каждого тайла маски
+            processed_mask_list = []
+            for idx, mask_tile in enumerate(mask_tiles_list):
+                print("Обрабатываем тайл {} размерности {}".format(idx, mask_tile.shape))
+                curr_tile = tiles_list[idx]
+
+                # Заносим изображение в модель
+                predictor.set_image(curr_tile)
+
+                # Промт
+
 
 
 
