@@ -742,8 +742,8 @@ def process(operation_mode, source_files, out_path):
 
             # TODO: разбиение и обработка по тайлам
             tiles_list, coords_list = w.split_into_tiles(image_bgr_original,
-                                                         tile_size=1024,
-                                                         overlap=256)
+                                                         tile_size=s.TILING_SIZE,
+                                                         overlap=s.TILING_OVERLAP)
             print("Изображение {} разбито на фрагменты (тайлы): {}".format(img_file, len(tiles_list)))
             # for idx, tile in enumerate(tiles_list):
             #     # Имя выходного файла тайла
@@ -825,7 +825,7 @@ def process(operation_mode, source_files, out_path):
             image_bgr_new = w.assemble_image(processed_mask_list,
                                              coords_list,
                                              original_shape=image_bgr_original.shape,
-                                             overlap=256)
+                                             overlap=s.TILING_OVERLAP)
 
             # Имя выходного файла тайла
             out_new_base_name = img_file_base_name[:-4] + "_tiling_mask.jpg"
