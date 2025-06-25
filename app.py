@@ -770,8 +770,8 @@ def process(operation_mode, source_files, out_path):
 
 
             mask_tiles_list, mask_coords_list = w.split_into_tiles(result_mask1024_original_size,
-                                                                   tile_size=1024,
-                                                                   overlap=256)
+                                                                   tile_size=s.TILING_SIZE,
+                                                                   overlap=s.TILING_OVERLAP)
             print("Маска в оригинальном разрешении разбита на фрагменты (тайлы): {}".format(len(mask_tiles_list)))
             # for idx, tile in enumerate(mask_tiles_list):
             #     # Имя выходного файла тайла
@@ -784,7 +784,9 @@ def process(operation_mode, source_files, out_path):
             # Обработка каждого тайла маски
             processed_mask_list = []
             for idx, mask_tile in enumerate(mask_tiles_list):
-                print("Обрабатываем тайл {} размерности {}".format(idx, mask_tile.shape))
+                print("{}  Обрабатываем тайл {} размерности {}".format(s.CR_CLEAR_cons, idx, mask_tile.shape), end="")
+
+                #
                 curr_tile = tiles_list[idx]
 
                 # 1. Подготовка маски-промпта
