@@ -341,7 +341,7 @@ def process(operation_mode, source_files, out_path):
             print("Фильтруем маски по площади от {} до {}".format(area_min, area_max))
             mask_list = []
             for res in non_overlapping_result:
-                if area_min < res['area'] < area_max:
+                if area_min <= res['area'] <= area_max:
                     mask_list.append(res['segmentation'])
                     print("\r  Взяли маску площадью: {}".format(res['area']), end="")
                 else:
@@ -483,21 +483,32 @@ def process(operation_mode, source_files, out_path):
 
                 # Берем изображение фрагмента текстуры вокруг центра
                 image_center = image_rgb_original[Y1:Y2, X1:X2].copy()
-                # print(image_center.shape)
+                print("Обрабатываем кроп {}, размерности: {}".format(idx+1, image_center.shape))
 
                 # Заносим изображение в модель
                 predictor.set_image(image_center)
 
-                # Промт
+                # Координаты центра масс, пересчитанные к image_center (кроп изображения)
                 Xp = Xc - X1
                 Yp = Yc - Y1
-                promt_point = (Xp, Yp)
-                # print(promt_point)
-                input_point = np.array([promt_point])
-                # print(input_point)
-                input_label = np.ones(input_point.shape[0])
-                # print(input_label)
 
+                # Готовим промт
+                if s.PROMPT_POINTS_RADIUS == 0:
+                    # Промт - одна точка
+                    promt_point = (Xp, Yp)
+                    print("  Промт: точка {}".format(promt_point))
+                    #
+                    input_point = np.array([promt_point])
+                    input_label = np.ones(input_point.shape[0])
+                else:
+                    # Промт - список точек в заданном радиусе
+                    promt_point_list = u.get_points_in_radius(image_center.shape, (Xp,Yp), s.PROMPT_POINTS_RADIUS)
+                    print("  Промт: {} точек в радиусе {} от центра {}".format(len(promt_point_list), s.PROMPT_POINTS_RADIUS, (Xp,Yp)))
+                    #
+                    input_point = np.array(promt_point_list)
+                    input_label = np.ones(input_point.shape[0])
+
+                # Предикт
                 masks, scores, logits = predictor.predict(point_coords=input_point,
                                                           point_labels=input_label,
                                                           multimask_output=True)

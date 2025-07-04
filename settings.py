@@ -137,8 +137,11 @@ SAM2_score_threshold = 0.95
 # #############################################################
 # Фильтр масок в разрешении 1024 по размеру
 AUTO_CALCULATE_AREAS = get_value_from_env("AUTO_CALCULATE_AREAS", default_value=False)
-AREA_MIN = get_value_from_env("AREA_MIN", default_value=100)
+AREA_MIN = get_value_from_env("AREA_MIN", default_value=int(1024 * 1024 * 0.2))
 AREA_MAX = get_value_from_env("AREA_MAX", default_value=int(1024 * 1024 * 0.8))
+
+# Расширение точки промпта на заданный радиус
+PROMPT_POINTS_RADIUS = get_value_from_env("PROMPT_POINTS_RADIUS", default_value=30)
 
 # Разбиение на тайлы
 TILING_SIZE = get_value_from_env("TILING_SIZE", default_value=1024)
