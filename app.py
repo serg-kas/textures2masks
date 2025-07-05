@@ -3,6 +3,7 @@
 Режимы работы см.operation_mode_list
 """
 import numpy as np
+import random
 import cv2 as cv
 # from PIL import Image
 #
@@ -493,20 +494,39 @@ def process(operation_mode, source_files, out_path):
                 Yp = Yc - Y1
 
                 # Готовим промт
-                if s.PROMPT_POINTS_RADIUS == 0:
-                    # Промт - одна точка
+                if s.PROMPT_POINT_RADIUS == 0:
+                    # Промт - одна точка в центре масс маски
                     promt_point = (Xp, Yp)
                     print("  Промт: точка {}".format(promt_point))
                     #
                     input_point = np.array([promt_point])
                     input_label = np.ones(input_point.shape[0])
                 else:
-                    # Промт - список точек в заданном радиусе
-                    promt_point_list = u.get_points_in_radius(image_center.shape, (Xp,Yp), s.PROMPT_POINTS_RADIUS)
-                    print("  Промт: {} точек в радиусе {} от центра {}".format(len(promt_point_list), s.PROMPT_POINTS_RADIUS, (Xp,Yp)))
+                    pass
+                    # TODO: Проверяем средний цветПромт - список точек в заданном радиусе
+                    # promt_point_list = u.get_points_in_radius(image_center.shape,
+                    #                                           (Xp,Yp),
+                    #                                           s.PROMPT_POINT_RADIUS)
                     #
-                    input_point = np.array(promt_point_list)
-                    input_label = np.ones(input_point.shape[0])
+                    # # Фильтруем точки и получаем средний цвет
+                    # avg_color, filtered_points = u.calculate_average_color_with_outliers(image_center,
+                    #                                                                      promt_point_list,
+                    #                                                                      color_threshold=10)
+                    #
+                    # print(f"  Средний цвет: BGR{avg_color}")
+                    # print(f"  Фильтрация по цвету списка {len(promt_point_list)} точек, осталось после фильтрации: {len(filtered_points)}")
+                    #
+                    # promt_point_list = random.sample(filtered_points, 1)
+                    #
+                    # # if (Xp, Yp) in promt_point_list and (Xp, Yp) not in promt_point_list:
+                    # #     promt_point_list.append((Xp, Yp))
+                    #
+                    # print("  Промт: {} точек в радиусе {} от центра {}".format(len(promt_point_list),
+                    #                                                            s.PROMPT_POINT_RADIUS, (Xp, Yp)))
+
+                    #
+                    # input_point = np.array(promt_point_list)
+                    # input_label = np.ones(input_point.shape[0])
 
                 # Предикт
                 masks, scores, logits = predictor.predict(point_coords=input_point,

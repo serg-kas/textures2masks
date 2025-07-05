@@ -2352,4 +2352,171 @@ def get_points_in_radius(image_shape, center, radius):
     return points
 
 
+def calculate_average_color_with_outliers(image, points, color_threshold=30):
+    """
+    Вычисляет средний цвет точек, исключая выбросы, и возвращает отфильтрованные точки
+
+    Параметры:
+    image : numpy.ndarray
+        Изображение в формате BGR
+    points : list of tuples
+        Список точек в формате [(x1, y1), (x2, y2), ...]
+    color_threshold : int, optional
+        Пороговое значение для определения выбросов (по умолчанию 30)
+
+    Возвращает:
+    tuple : (avg_bgr, filtered_points)
+        Средний цвет в формате (b, g, r) и отфильтрованный список точек
+    """
+    if not points:
+        return (0, 0, 0), []
+
+    # Собираем цвета всех точек
+    colors = []
+    valid_points = []
+
+    for x, y in points:
+        # Проверяем, находится ли точка в пределах изображения
+        if 0 <= y < image.shape[0] and 0 <= x < image.shape[1]:
+            colors.append(image[y, x])
+            valid_points.append((x, y))
+
+    if not valid_points:
+        return (0, 0, 0), []
+
+    colors = np.array(colors)
+
+    # Рассчитываем медиану и MAD для каждого канала
+    median_bgr = np.median(colors, axis=0)
+    mad_bgr = np.median(np.abs(colors - median_bgr), axis=0)
+
+    # Создаем маску для точек без выбросов
+    mask = np.all(np.abs(colors - median_bgr) <= (color_threshold + mad_bgr * 1.5), axis=1)
+
+    # Применяем маску
+    filtered_colors = colors[mask]
+    filtered_points = [point for point, keep in zip(valid_points, mask) if keep]
+
+    # Рассчитываем средний цвет по оставшимся точкам
+    if len(filtered_colors) > 0:
+        avg_bgr = np.mean(filtered_colors, axis=0).astype(int)
+        avg_bgr_tuple = (int(avg_bgr[0]), int(avg_bgr[1]), int(avg_bgr[2]))
+    else:
+        avg_bgr_tuple = (0, 0, 0)
+
+    return avg_bgr_tuple, filtered_points
+
+
+
+# from scipy.spatial import cKDTree
+# import random
+#
+# def downsample_points(points, target_count, method='grid'):
+#     """
+#     Прореживает список точек до заданного количества, сохраняя равномерное распределение
+#
+#     Параметры:
+#     points : list of tuples
+#         Список точек в формате [(x1, y1), (x2, y2), ...]
+#     target_count : int
+#         Желаемое количество точек после прореживания
+#     method : str, optional
+#         Метод прореживания ('grid', 'poisson', 'random')
+#         По умолчанию 'grid'
+#
+#     Возвращает:
+#     list of tuples
+#         Прореженный список точек
+#     """
+#     if len(points) <= target_count:
+#         return points
+#
+#     if method == 'random':
+#         # Простейшая случайная выборка
+#         return random.sample(points, target_count)
+#
+#     elif method == 'grid':
+#         # Метод равномерной сетки
+#         xs = [p[0] for p in points]
+#         ys = [p[1] for p in points]
+#
+#         # Определяем границы области
+#         min_x, max_x = min(xs), max(xs)
+#         min_y, max_y = min(ys), max(ys)
+#         width = max_x - min_x
+#         height = max_y - min_y
+#
+#         if width == 0 or height == 0:
+#             return random.sample(points, min(target_count, len(points)))
+#
+#         # Рассчитываем размеры сетки
+#         aspect_ratio = width / height
+#         cols = int(np.round(np.sqrt(target_count * aspect_ratio)))
+#         rows = int(np.round(target_count / cols))
+#         actual_count = cols * rows
+#
+#         # Создаем сетку
+#         x_step = width / cols
+#         y_step = height / rows
+#
+#         # Создаем копию для модификации
+#         remaining_points = points.copy()
+#         result_points = []
+#
+#         for i in range(rows):
+#             for j in range(cols):
+#                 # Центр текущей ячейки
+#                 cell_center_x = min_x + (j + 0.5) * x_step
+#                 cell_center_y = min_y + (i + 0.5) * y_step
+#
+#                 if not remaining_points:
+#                     break
+#
+#                 # Находим ближайшую точку к центру ячейки
+#                 closest_point = min(
+#                     remaining_points,
+#                     key=lambda p: (p[0] - cell_center_x) ** 2 + (p[1] - cell_center_y) ** 2
+#                 )
+#
+#                 result_points.append(closest_point)
+#                 remaining_points.remove(closest_point)
+#
+#         # Если получилось больше точек, чем нужно (из-за округления)
+#         return result_points[:target_count]
+#
+#     elif method == 'poisson':
+#         # Метод Пуассона - более равномерное распределение
+#         points_array = np.array(points)
+#
+#         # Создаем KD-дерево для быстрого поиска соседей
+#         tree = cKDTree(points_array)
+#
+#         # Выбираем случайную начальную точку
+#         selected_indices = [random.randint(0, len(points) - 1)]
+#         candidates = set(range(len(points))) - set(selected_indices)
+#
+#         # Рассчитываем минимальное расстояние между точками
+#         bbox_diag = np.linalg.norm([max_x - min_x, max_y - min_y])
+#         min_distance = bbox_diag / np.sqrt(target_count)
+#
+#         while candidates and len(selected_indices) < target_count:
+#             # Выбираем случайного кандидата
+#             candidate_idx = random.choice(list(candidates))
+#             candidates.remove(candidate_idx)
+#
+#             # Проверяем расстояние до уже выбранных точек
+#             distances, _ = tree.query(
+#                 points_array[candidate_idx],
+#                 k=min(len(selected_indices), 3),
+#                 distance_upper_bound=min_distance * 1.5
+#             )
+#
+#             if np.all(distances > min_distance):
+#                 selected_indices.append(candidate_idx)
+#
+#         return [points[i] for i in selected_indices]
+#
+#     else:
+#         raise ValueError(f"Unknown method: {method}. Use 'grid', 'poisson' or 'random'")
+
 
