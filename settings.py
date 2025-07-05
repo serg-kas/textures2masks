@@ -142,8 +142,8 @@ AREA_MAX = get_value_from_env("AREA_MAX", default_value=int(1024 * 1024 * 0.8))
 
 # Расщепление точки промта в заданном радиусе
 PROMPT_POINT_RADIUS = get_value_from_env("PROMPT_POINT_RADIUS", default_value=30)
-PROMPT_POINT_NUMBER = get_value_from_env("PROMPT_POINT_COLOR_CHECK", default_value=5)
-PROMPT_POINT_COLOR_FILTER = get_value_from_env("PROMPT_POINT_COLOR_CHECK", default_value=True)
+PROMPT_POINT_NUMBER = get_value_from_env("PROMPT_POINT_NUMBER", default_value=5)
+PROMPT_POINT_COLOR_FILTER = get_value_from_env("PROMPT_POINT_COLOR_FILTER", default_value=True)
 PROMPT_POINT_COLOR_THRESH = get_value_from_env("PROMPT_POINT_COLOR_THRESH", default_value=10)
 
 # Разбиение на тайлы
