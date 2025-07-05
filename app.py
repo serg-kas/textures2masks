@@ -484,7 +484,6 @@ def process(operation_mode, source_files, out_path):
 
                 # Берем изображение фрагмента текстуры вокруг центра
                 image_center = image_rgb_original[Y1:Y2, X1:X2].copy()
-                print("Обрабатываем кроп {}, размерности: {}".format(idx+1, image_center.shape))
 
                 # Заносим изображение в модель
                 predictor.set_image(image_center)
@@ -497,7 +496,6 @@ def process(operation_mode, source_files, out_path):
                 if s.PROMPT_POINT_RADIUS == 0:
                     # Промт - одна точка в центре масс маски
                     promt_point = (Xp, Yp)
-                    print("  Промт: точка {}".format(promt_point))
                     #
                     input_point = np.array([promt_point])
                     input_label = np.ones(input_point.shape[0])
@@ -544,12 +542,13 @@ def process(operation_mode, source_files, out_path):
                     mask_promted_list.append(masks[best_idx])
                     # print(mask_promted_list[-1].shape)
 
-                    print("{}  По score выбрана маска {} из {}; центр: {}, размер: {}, score: {:.3f}".format(s.CR_CLEAR_cons,
-                                                                                                             counter_crop,
-                                                                                                             len(center_of_mass_original_list),
-                                                                                                             (Xc, Yc),
-                                                                                                             mask_promted_list[-1].shape,
-                                                                                                             best_score),
+                    print("{}  ЦМ {}/{}. Промт, точек: {}. По score выбрана маска: центр: {}, размер: {}, score: {:.3f}".format(s.CR_CLEAR_cons,
+                                                                                                                                         idx+1,
+                                                                                                                                         len(center_of_mass_original_list),
+                                                                                                                                         input_point.shape[0],
+                                                                                                                                         (Xc, Yc),
+                                                                                                                                          mask_promted_list[-1].shape,
+                                                                                                                                          best_score),
                           end="")
                     #
                     counter_crop += 1
@@ -574,14 +573,16 @@ def process(operation_mode, source_files, out_path):
                     mask_promted_list.append(masks[best_iou_idx])
                     # print(mask_promted_list[-1].shape)
 
-                    print("{}  По IoU выбрана маска {} из {}; центр: {}, размер: {}, score: {:.3f}".format(s.CR_CLEAR_cons,
-                                                                                                           counter_crop,
-                                                                                                           len(center_of_mass_original_list),
-                                                                                                           (Xc, Yc),
-                                                                                                           mask_promted_list[-1].shape,
-                                                                                                           scores[best_iou_idx]))
+                    print("{}  ЦМ {}/{}. Промт, точек: {}. По IoU выбрана маска: центр: {}, размер: {}, score: {:.3f}".format(s.CR_CLEAR_cons,
+                                                                                                                              idx+1,
+                                                                                                                              len(center_of_mass_original_list),
+                                                                                                                              input_point.shape[0],
+                                                                                                                              (Xc, Yc),
+                                                                                                                              mask_promted_list[-1].shape,
+                                                                                                                              scores[best_iou_idx]))
                     #
                     counter_crop += 1
+            print("Всего обработано кропов: {}".format(counter_crop))
 
             # Собираем выходную маску в оригинальном разрешении
             combined_original_mask = np.zeros((H, W), dtype=bool)
