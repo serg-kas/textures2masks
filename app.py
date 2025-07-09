@@ -812,12 +812,13 @@ def process(operation_mode, source_files, out_path):
             #     if cv.imwrite(str(out_tile_file), tile):
             #         print("  Сохранили тайл маски: {}".format(out_tile_file))
 
-            # Обработка каждого тайла маски, полученной через разрешение 1024 на тайлы
+
+            # Цикл обработки тайлов (сегментация в оригинальном разрешении)
+            print("Сегментация тайлов в оригинальном разрешении")
             processed_mask_list = []
             for idx, curr_mask in enumerate(mask_tiles_list):
                 #
                 curr_tile = tiles_list[idx]
-                print("{}  Обрабатываем тайл {} размерности {}".format(s.CR_CLEAR_cons, idx+1, curr_tile.shape), end="")
                 # print(curr_tile.shape, curr_mask.shape)
                 # u.show_image_cv(curr_tile, title='mask_tile')
                 # u.show_image_cv(curr_mask, title='mask_mask')
@@ -834,30 +835,30 @@ def process(operation_mode, source_files, out_path):
                 predictor.set_image(curr_tile)
 
                 # 4. Предсказание с использованием маски как промпта
-                masks, scores, _ = predictor.predict(
-                    point_coords=None,
-                    point_labels=None,
-                    box=None,
-                    mask_input=mask_input[None, :, :],  # Добавляем batch dimension
-                    multimask_output=True,  # Возвращаем только лучшую маску
-                )
-                # print("masks", masks.shape)
+                masks, scores, _ = predictor.predict(point_coords=None,
+                                                     point_labels=None,
+                                                     box=None,
+                                                     mask_input=mask_input[None, :, :],  # добавляем batch dimension
+                                                     multimask_output=True)
+                tool_model_sam2.counter += 1
+                # print(masks.shape, scores.shape)
 
-                iou_list = []
-                for pred_mask in masks:
-                    # print(pred_mask.shape, custom_mask.shape)
-                    iou = w.calculate_mask_iou(custom_mask, pred_mask)
-                    iou_list.append(iou)
-                # print("iou_list", iou_list)
-                mask_idx = np.argmax(iou_list)
-                # print("mask_idx", mask_idx)
+                # Выбор маски по максимальному score
+                mask_idx = np.argmax(scores)
+                print("scores", scores, mask_idx)
 
+                # Выбор маски по максимальному iou
+                # iou_list = [w.calculate_mask_iou(custom_mask, pred_mask) for pred_mask in masks]
+                # mask_idx = np.argmax(iou_list)
+                # print("iou_list", iou_list, mask_idx)
+
+                #
                 masks_img = masks[mask_idx].astype(np.uint8) * 255
                 masks_img = cv.cvtColor(masks_img, cv.COLOR_GRAY2BGR)
                 processed_mask_list.append(masks_img)
-                # u.show_image_cv(masks_img, title='masks_img')
+                # u.show_image_cv(u.resize_image_cv(masks_img), title='masks_img')
 
-            # Сборка выходного изображения маски
+            # Сборка выходной маски
             image_bgr_tiling = w.assemble_image(processed_mask_list,
                                                 coords_list,
                                                 original_shape=image_bgr_original.shape,
@@ -870,7 +871,6 @@ def process(operation_mode, source_files, out_path):
             out_new_file = os.path.join(out_path, out_new_base_name)
             if cv.imwrite(str(out_new_file), image_bgr_tiling):
                 print("  Сохранили выходной файл: {}".format(out_new_file))
-
 
         time_1 = time.perf_counter()
         print("Обработали изображений: {}, время {:.2f} с.".format(len(img_file_list),
