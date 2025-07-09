@@ -844,12 +844,12 @@ def process(operation_mode, source_files, out_path):
                 # print(masks.shape, scores.shape)
 
                 # Выбор маски по максимальному score
-                mask_idx = np.argmax(scores)
-                print("scores", scores, mask_idx)
+                # mask_idx = np.argmax(scores)
+                # print("scores", scores, mask_idx)
 
                 # Выбор маски по максимальному iou
-                # iou_list = [w.calculate_mask_iou(custom_mask, pred_mask) for pred_mask in masks]
-                # mask_idx = np.argmax(iou_list)
+                iou_list = [w.calculate_mask_iou(custom_mask, pred_mask) for pred_mask in masks]
+                mask_idx = np.argmax(iou_list)
                 # print("iou_list", iou_list, mask_idx)
 
                 #
@@ -863,7 +863,7 @@ def process(operation_mode, source_files, out_path):
                                                 coords_list,
                                                 original_shape=image_bgr_original.shape,
                                                 overlap=s.TILING_OVERLAP)
-            u.show_image_cv(u.resize_image_cv(image_bgr_tiling), title='masks_img')
+            # u.show_image_cv(u.resize_image_cv(image_bgr_tiling), title='masks_img')
 
             # Имя выходного файла тайла
             out_new_base_name = img_file_base_name[:-4] + "_tiling_mask.jpg"
