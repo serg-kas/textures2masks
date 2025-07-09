@@ -819,13 +819,12 @@ def process(operation_mode, source_files, out_path):
                 curr_tile = tiles_list[idx]
                 print("{}  Обрабатываем тайл {} размерности {}".format(s.CR_CLEAR_cons, idx+1, curr_tile.shape), end="")
                 # print(curr_tile.shape, curr_mask.shape)
-                u.show_image_cv(curr_tile, title='mask_tile')
-                u.show_image_cv(curr_mask, title='mask_mask')
+                # u.show_image_cv(curr_tile, title='mask_tile')
+                # u.show_image_cv(curr_mask, title='mask_mask')
 
                 # 1. Подготовка маски-промпта
                 custom_mask = cv.cvtColor(curr_mask, cv.COLOR_BGR2GRAY)
-                low_res_mask = cv.resize(custom_mask.astype(np.uint8), (256, 256),
-                                         interpolation=cv.INTER_NEAREST)
+                low_res_mask = cv.resize(custom_mask.astype(np.uint8), (256, 256), interpolation=cv.INTER_NEAREST)
                 # u.show_image_cv(low_res_mask, title='low_res_mask')
 
                 # 2. Нормализация: [0, 255] -> [0, 1]
@@ -856,20 +855,21 @@ def process(operation_mode, source_files, out_path):
                 masks_img = masks[mask_idx].astype(np.uint8) * 255
                 masks_img = cv.cvtColor(masks_img, cv.COLOR_GRAY2BGR)
                 processed_mask_list.append(masks_img)
+                # u.show_image_cv(masks_img, title='masks_img')
 
             # Сборка выходного изображения маски
-            image_bgr_new = w.assemble_image(processed_mask_list,
-                                             coords_list,
-                                             original_shape=image_bgr_original.shape,
-                                             overlap=s.TILING_OVERLAP)
+            image_bgr_tiling = w.assemble_image(processed_mask_list,
+                                                coords_list,
+                                                original_shape=image_bgr_original.shape,
+                                                overlap=s.TILING_OVERLAP)
+            u.show_image_cv(u.resize_image_cv(image_bgr_tiling), title='masks_img')
 
             # Имя выходного файла тайла
             out_new_base_name = img_file_base_name[:-4] + "_tiling_mask.jpg"
             # Полный путь к выходному файлу
             out_new_file = os.path.join(out_path, out_new_base_name)
-            if cv.imwrite(str(out_new_file), image_bgr_new):
+            if cv.imwrite(str(out_new_file), image_bgr_tiling):
                 print("  Сохранили выходной файл: {}".format(out_new_file))
-
 
 
         time_1 = time.perf_counter()
