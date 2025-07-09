@@ -844,11 +844,11 @@ def process(operation_mode, source_files, out_path):
                 tool_model_sam2.counter += 1
                 # print(masks.shape, scores.shape)
 
-                # Выбор маски по максимальному score
+                # ВАР-1. Выбор маски по максимальному score
                 # mask_idx = np.argmax(scores)
                 # print("scores", scores, mask_idx)
 
-                # Выбор маски по максимальному iou
+                # ВАР-2. Выбор маски по максимальному iou
                 iou_list = [w.calculate_mask_iou(custom_mask, pred_mask) for pred_mask in masks]
                 mask_idx = np.argmax(iou_list)
                 # print("iou_list", iou_list, mask_idx)
