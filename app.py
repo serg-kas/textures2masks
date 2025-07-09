@@ -817,6 +817,7 @@ def process(operation_mode, source_files, out_path):
             print("Сегментация тайлов в оригинальном разрешении")
             processed_mask_list = []
             for idx, curr_mask in enumerate(mask_tiles_list):
+                print("  Тайл {}/{}".format(idx+1, len(mask_tiles_list)))
                 #
                 curr_tile = tiles_list[idx]
                 # print(curr_tile.shape, curr_mask.shape)
