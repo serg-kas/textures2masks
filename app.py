@@ -767,11 +767,12 @@ def process(operation_mode, source_files, out_path):
                 print(f'Произошла ошибка при сохранении файла: {e}')
 
 
-            # TODO: разбиение и обработка по тайлам
+            # TODO: разбиение и обработка изображение на тайлы
             tiles_list, coords_list = w.split_into_tiles(image_bgr_original,
                                                          tile_size=s.TILING_SIZE,
                                                          overlap=s.TILING_OVERLAP)
             print("Изображение {} разбито на фрагменты (тайлы): {}".format(img_file, len(tiles_list)))
+            # Сохранение списка тайлов в файлы
             # for idx, tile in enumerate(tiles_list):
             #     # Имя выходного файла тайла
             #     out_tile_base_name = img_file_base_name[:-4] + f"_tile_{idx}.jpg"
@@ -780,26 +781,29 @@ def process(operation_mode, source_files, out_path):
             #     if cv.imwrite(str(out_tile_file), tile):
             #         print("  Сохранили тайл: {}".format(out_tile_file))
 
-            # # Обработка каждого тайла
-            # processed_tiles = [cv.cvtColor(tile, cv.COLOR_BGR2RGB) for tile in tiles_list]
-            #
-            # # Сборка выходного изображения
-            # image_bgr_new = w.assemble_image(processed_tiles,
-            #                                  coords_list,
-            #                                  original_shape=image_bgr_original.shape,
-            #                                  overlap=256)
-            # # Имя выходного файла тайла
+            # Обработка каждого тайла
+            processed_tiles = [cv.cvtColor(tile, cv.COLOR_BGR2RGB) for tile in tiles_list]
+
+            # Сборка выходного изображения
+            # image_rgb_reconstructed = w.assemble_image(processed_tiles,
+            #                                            coords_list,
+            #                                            original_shape=image_bgr_original.shape,
+            #                                            overlap=256)
+            # Сохранение собранного файла
             # out_new_base_name = img_file_base_name[:-4] + "_reconstructed.jpg"
             # # Полный путь к выходному файлу
             # out_new_file = os.path.join(out_path, out_new_base_name)
-            # if cv.imwrite(str(out_new_file), image_bgr_new):
+            # image_bgr_reconstructed = cv.cvtColor(image_rgb_reconstructed, cv.COLOR_RGB2BGR)
+            # if cv.imwrite(str(out_new_file), image_bgr_reconstructed):
             #     print("  Сохранили выходной файл: {}".format(out_new_file))
 
 
+            # Разбиение маски, полученной через разрешение 1024 на тайлы
             mask_tiles_list, mask_coords_list = w.split_into_tiles(result_mask1024_original_size,
                                                                    tile_size=s.TILING_SIZE,
                                                                    overlap=s.TILING_OVERLAP)
             print("Маска в оригинальном разрешении разбита на фрагменты (тайлы): {}".format(len(mask_tiles_list)))
+            # Сохранение списка тайлов масок в файлы
             # for idx, tile in enumerate(mask_tiles_list):
             #     # Имя выходного файла тайла
             #     out_tile_base_name = img_file_base_name[:-4] + f"_mask_tile_{idx}.jpg"
@@ -808,18 +812,21 @@ def process(operation_mode, source_files, out_path):
             #     if cv.imwrite(str(out_tile_file), tile):
             #         print("  Сохранили тайл маски: {}".format(out_tile_file))
 
-            # Обработка каждого тайла маски
+            # Обработка каждого тайла маски, полученной через разрешение 1024 на тайлы
             processed_mask_list = []
-            for idx, mask_tile in enumerate(mask_tiles_list):
-                print("{}  Обрабатываем тайл {} размерности {}".format(s.CR_CLEAR_cons, idx, mask_tile.shape), end="")
-
+            for idx, curr_mask in enumerate(mask_tiles_list):
                 #
                 curr_tile = tiles_list[idx]
+                print("{}  Обрабатываем тайл {} размерности {}".format(s.CR_CLEAR_cons, idx+1, curr_tile.shape), end="")
+                # print(curr_tile.shape, curr_mask.shape)
+                u.show_image_cv(curr_tile, title='mask_tile')
+                u.show_image_cv(curr_mask, title='mask_mask')
 
                 # 1. Подготовка маски-промпта
-                custom_mask = cv.cvtColor(mask_tile, cv.COLOR_BGR2GRAY)
+                custom_mask = cv.cvtColor(curr_mask, cv.COLOR_BGR2GRAY)
                 low_res_mask = cv.resize(custom_mask.astype(np.uint8), (256, 256),
                                          interpolation=cv.INTER_NEAREST)
+                # u.show_image_cv(low_res_mask, title='low_res_mask')
 
                 # 2. Нормализация: [0, 255] -> [0, 1]
                 mask_input = (low_res_mask > 128).astype(np.float32)
