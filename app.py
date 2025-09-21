@@ -767,7 +767,7 @@ def process(operation_mode, source_files, out_path):
                 print(f'Произошла ошибка при сохранении файла: {e}')
 
 
-            # TODO: разбиение и обработка изображение на тайлы
+            # TODO: разбиение и обработка изображение на тайлы (проверить корректность разбиения и сборки тайлов обратно)
             tiles_list, coords_list = w.split_into_tiles(image_bgr_original,
                                                          tile_size=s.TILING_SIZE,
                                                          overlap=s.TILING_OVERLAP)
