@@ -728,8 +728,8 @@ def process(operation_mode, source_files, out_path):
             #     print("Пересчитываем размеры масок для фильтрации")
             #     area_min = s.AREA_MIN
             #     area_max = s.AREA_MAX
-
             print("Фильтруем маски по площади от {} до {}".format(area_min, area_max))
+
             mask_list = []
             for res in non_overlapping_result:
                 if area_min < res['area'] < area_max:
@@ -781,7 +781,7 @@ def process(operation_mode, source_files, out_path):
             #     if cv.imwrite(str(out_tile_file), tile):
             #         print("  Сохранили тайл: {}".format(out_tile_file))
 
-            # Обработка каждого тайла
+            # TODO: Обработка каждого тайла ?
             processed_tiles = [cv.cvtColor(tile, cv.COLOR_BGR2RGB) for tile in tiles_list]
 
             # Сборка выходного изображения
@@ -823,6 +823,9 @@ def process(operation_mode, source_files, out_path):
                 # print(curr_tile.shape, curr_mask.shape)
                 # u.show_image_cv(curr_tile, title='mask_tile')
                 # u.show_image_cv(curr_mask, title='mask_mask')
+
+                # TODO: собрать все точки - центры масс в пределах данного тайла
+
 
                 # 1. Подготовка маски-промпта
                 custom_mask = cv.cvtColor(curr_mask, cv.COLOR_BGR2GRAY)
@@ -891,8 +894,10 @@ if __name__ == '__main__':
     """
 
     # Проверим наличие и создадим рабочие папки если их нет
-    config.check_folders([s.SOURCE_PATH, s.OUT_PATH],
-                         verbose=s.VERBOSE)
+    config.check_folders(
+        [s.SOURCE_PATH,
+         s.OUT_PATH],
+        verbose=s.VERBOSE)
 
     # Параметры командной строки
     OPERATION_MODE = default_mode if len(sys.argv) <= 1 else sys.argv[1]
