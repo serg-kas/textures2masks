@@ -93,7 +93,8 @@ OPERATION_MODE_DICT = {
                        'help':'Справочная информация',
                        'self_test':'Тестовый запуск',
                        'workflow_baseline':'Базовый алгоритм',
-                       'workflow_tiling':'Алгоритм на основе тайлинга - В РАЗРАБОТКЕ'
+                       'workflow_active_contours':'Алгоритм с улучшением маски по контурам - НОВЫЙ',
+                       'workflow_tiling':'Алгоритм на основе тайлинга - НА ПАУЗЕ'
 }
 OPERATION_MODE_LIST = list(OPERATION_MODE_DICT.keys())
 DEFAULT_MODE = OPERATION_MODE_LIST[0]  # режим работы по умолчанию
@@ -123,10 +124,10 @@ ALLOWED_TYPES = ALLOWED_IMAGES + ['.pdf']
 # #############################################################
 
 # Параметры модели SAM2
-SAM2_config_file = "sam2_hiera_l.yaml"
-SAM2_checkpoint_file = "models/sam2_hiera_large.pt"
-# SAM2_config_file = "sam2.1_hiera_l.yaml"
-# SAM2_checkpoint_file = "models/sam2.1_hiera_large.pt"
+# SAM2_config_file = "sam2_hiera_l.yaml"
+# SAM2_checkpoint_file = "models/sam2_hiera_large.pt"
+SAM2_config_file = "sam2.1_hiera_l.yaml"
+SAM2_checkpoint_file = "models/sam2.1_hiera_large.pt"
 SAM2_force_cuda = get_value_from_env("SAM2_FORCE_CUDA", default_value=False)
 SAM2_iou_threshold = 0.25
 SAM2_score_threshold = 0.95
@@ -143,8 +144,8 @@ AREA_MAX = get_value_from_env("AREA_MAX", default_value=int(1024 * 1024 * 0.8))
 # Расщепление точки промта в заданном радиусе
 PROMPT_POINT_RADIUS = get_value_from_env("PROMPT_POINT_RADIUS", default_value=30)
 PROMPT_POINT_NUMBER = get_value_from_env("PROMPT_POINT_NUMBER", default_value=5)
-PROMPT_POINT_COLOR_FILTER = get_value_from_env("PROMPT_POINT_COLOR_FILTER", default_value=True)
-PROMPT_POINT_COLOR_THRESH = get_value_from_env("PROMPT_POINT_COLOR_THRESH", default_value=10)
+PROMPT_POINT_COLOR_FILTER = get_value_from_env("PROMPT_POINT_COLOR_FILTER", default_value=False)
+PROMPT_POINT_COLOR_THRESH = get_value_from_env("PROMPT_POINT_COLOR_THRESH", default_value=20)
 
 # Разбиение на тайлы
 TILING_SIZE = get_value_from_env("TILING_SIZE", default_value=1024)
