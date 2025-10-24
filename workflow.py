@@ -219,7 +219,6 @@ def calculate_mask_dimensions_cv(mask):
     return w, h
 
 
-# TODO: функционал базового алгоритма
 def baseline(img,
              tool_list=None,
              verbose=False):
@@ -227,10 +226,6 @@ def baseline(img,
     Алгоритм обработки изображения через центры масс
 
     """
-    # TODO
-    results = {}
-
-
     # Получаем модель
     tool_model_sam2 = t.get_tool_by_name('model_sam2', tool_list=tool_list)
 
@@ -318,22 +313,6 @@ def baseline(img,
     result_mask1024_original_size = cv.resize(result_mask1024, (W, H),
                                               interpolation=cv.INTER_LANCZOS4)  # cv.INTER_CUBIC
 
-    # # Имя выходного файла в оригинальном разрешении
-    # out_img_base_name_mask1024 = img_file_base_name[:-4] + "_mask_1024.jpg"
-    # # Полный путь к выходному файлу
-    # out_img_file_mask1024 = os.path.join(out_path, out_img_base_name_mask1024)
-    #
-    # # Запись изображения
-    # try:
-    #     success = cv.imwrite(str(out_img_file_mask1024), result_mask1024_original_size)
-    #     if success:
-    #         print("Сохранили в оригинальном разрешении маску, полученную через ресайз от 1024: {}".format(
-    #             out_img_file_mask1024))
-    #     else:
-    #         print(f'Не удалось сохранить файл {out_img_file_mask1024}')
-    # except Exception as e:
-    #     print(f'Произошла ошибка при сохранении файла: {e}')
-
     # Имеющийся набор масок в разрешении 1024
     mask1024_list = mask_list.copy()
 
@@ -363,22 +342,6 @@ def baseline(img,
         else:
             result_mask1024_centers = cv.circle(result_mask1024_centers, (X, Y), 5, s.red, -1)
     # u.show_image_cv(result_mask1024_centers, title=str(result_mask1024_centers.shape))
-
-    # # Имя выходного файла центров масс масок в разрешении 1024
-    # out_img_base_name_mask1024_centers = img_file_base_name[:-4] + "_mask_centers_1024.jpg"
-    # # Полный путь к выходному файлу
-    # out_img_file_centers_mask1024 = os.path.join(out_path, out_img_base_name_mask1024_centers)
-    #
-    # # Запись изображения центров масс в разрешении 1024
-    # try:
-    #     success = cv.imwrite(str(out_img_file_centers_mask1024), result_mask1024_centers)
-    #     if success:
-    #         print(
-    #             "Сохранили визуализацию центров масс масок в разрешении 1024: {}".format(out_img_file_centers_mask1024))
-    #     else:
-    #         print(f'Не удалось сохранить файл {out_img_file_centers_mask1024}')
-    # except Exception as e:
-    #     print(f'Произошла ошибка при сохранении файла: {e}')
 
     # Пересчитываем центры масс к оригинальному разрешению
     if verbose:
