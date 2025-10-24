@@ -92,8 +92,7 @@ def get_value_from_env(variable, default_value=None, prefix_name="APP_", verbose
 OPERATION_MODE_DICT = {
                        'help':'Справочная информация',
                        'self_test':'Тестовый запуск',
-                       'workflow_baseline':'Базовый алгоритм - НА ПАУЗЕ',
-                       'workflow_baseline_refactoring':'Базовый алгоритм - РЕФАКТОРИНГ',
+                       'workflow_baseline':'Базовый алгоритм',
                        'workflow_tiling':'Алгоритм на основе тайлинга - НА ПАУЗЕ',
                        # 'workflow_active_contours':'Алгоритм с улучшением маски по контурам - НОВЫЙ',
 }
@@ -140,15 +139,15 @@ SAM2_score_threshold = 0.95
 #                     ПАРАМЕТРЫ ОБРАБОТКИ
 # #############################################################
 # Фильтр масок в разрешении 1024 по размеру
-# AUTO_CALCULATE_AREAS = get_value_from_env("AUTO_CALCULATE_AREAS", default_value=False)
-
-# AREA_MIN = get_value_from_env("AREA_MIN", default_value=int(1024 * 1024 * 0.005))
+AUTO_CALCULATE_AREAS = get_value_from_env("AUTO_CALCULATE_AREAS", default_value=False)
+#
 AREA_MIN = get_value_from_env("AREA_MIN", default_value=int(1024 * 1024 * 0.2))
 AREA_MAX = get_value_from_env("AREA_MAX", default_value=int(1024 * 1024 * 0.8))
 
 # Расщепление точки промта в заданном радиусе
 PROMPT_POINT_RADIUS = get_value_from_env("PROMPT_POINT_RADIUS", default_value=30)
 PROMPT_POINT_NUMBER = get_value_from_env("PROMPT_POINT_NUMBER", default_value=5)
+
 PROMPT_POINT_COLOR_FILTER = get_value_from_env("PROMPT_POINT_COLOR_FILTER", default_value=False)
 PROMPT_POINT_COLOR_THRESH = get_value_from_env("PROMPT_POINT_COLOR_THRESH", default_value=20)
 
