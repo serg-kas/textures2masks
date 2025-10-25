@@ -139,9 +139,9 @@ SAM2_score_threshold = 0.95
 #                     ПАРАМЕТРЫ ОБРАБОТКИ
 # #############################################################
 # Фильтр масок в разрешении 1024 по размеру
-AUTO_CALCULATE_AREAS = get_value_from_env("AUTO_CALCULATE_AREAS", default_value=False)
+AUTO_CALCULATE_AREAS = get_value_from_env("AUTO_CALCULATE_AREAS", default_value=True)
 #
-AREA_MIN = get_value_from_env("AREA_MIN", default_value=int(1024 * 1024 * 0.2))
+AREA_MIN = get_value_from_env("AREA_MIN", default_value=int(1024 * 1024 * 0.0001))
 AREA_MAX = get_value_from_env("AREA_MAX", default_value=int(1024 * 1024 * 0.8))
 
 # Расщепление точки промта в заданном радиусе

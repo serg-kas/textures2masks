@@ -284,18 +284,31 @@ def baseline(img,
     non_overlapping_result = find_non_overlapping_masks(sam2_result_sorted,  #  TODO: проверить алгоритм
                                                         iou_threshold=s.SAM2_iou_threshold)
 
-    # Отбираем маски по площади, берём пределы из настроек
-    area_min = s.AREA_MIN
-    area_max = s.AREA_MAX
-    if s.AUTO_CALCULATE_AREAS:
-        if verbose:
-            print("Отбираем маски по площади, рассчитываем пределы автоматически") # TODO: пересчитываем пределы площади
-    else:
-        print("Отбираем маски по площади, берем пределы из настроек: min={}, max={}".format(area_min, area_max))
-
-    # Фильтруем маски по площади
+    # Отбираем маски по площади
     if verbose:
-        print("Фильтруем маски по площади от {} до {}".format(area_min, area_max))
+        print("Отбираем маски по площади")
+    area_min, area_max = s.AREA_MIN, s.AREA_MAX  # пределы из настроек
+    if s.AUTO_CALCULATE_AREAS:
+        areas = [res['area'] for res in non_overlapping_result]
+        if areas:
+            # Статистика по площадям
+            if verbose:
+                print("  Статистика площадей: min={:.2f}, max={:.2f}, median={:.2f}".format(min(areas),
+                                                                                            max(areas),
+                                                                                            np.median(areas)))
+            #
+            # area_min, area_max = u.calculate_area_thresholds(areas,iqr_multiplier=1.5)
+            # area_min, area_max = u.calculate_area_thresholds_quantile(areas,lower_quantile=0.05,upper_quantile=0.95)
+            area_min, area_max = u.calculate_area_thresholds_quantile(areas,lower_quantile=0.2,upper_quantile=0.2)
+            if verbose:
+                print("  Автоматически рассчитаны пороги: от {:.2f} до {:.2f}".format(area_min, area_max))
+
+
+    else:
+        if verbose:
+            print("  Берем пределы из настроек: min={}, max={}".format(area_min, area_max))
+
+    #
     mask_list = []
     for res in non_overlapping_result:
         if area_min <= res['area'] <= area_max:
