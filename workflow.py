@@ -350,8 +350,7 @@ def baseline(img,
     # u.show_image_cv(result_mask1024_centers, title=str(result_mask1024_centers.shape))
 
     # Пересчитываем центры масс к оригинальному разрешению
-    # TODO: Визуализацию не используем
-    # result_mask_original_centers = result_mask1024_original_size.copy()
+    # result_mask_original_centers = result_mask1024_original_size.copy() # TODO: Визуализацию не используем
     center_of_mass_original_list = []
     for center in center_of_mass_list:
         X_1024, Y_1024 = center
@@ -360,7 +359,6 @@ def baseline(img,
         X = int(X)
         Y = int(Y)
         center_of_mass_original_list.append((X, Y))
-
         # radius = int(5 * W / 1024)
         # result_mask_original_centers = cv.circle(result_mask_original_centers, (X, Y), radius, s.blue, -1)
     # u.show_image_cv(u.resize_image_cv(result_mask_original_centers, img_size=1024), title=str(result_mask_original_centers.shape))
@@ -480,7 +478,7 @@ def baseline(img,
 
             if verbose:
                 print(
-                    "{}  - центр {}/{}. Промт, точек: {}. По score выбрана маска: центр: {}, размер: {}, score: {:.3f}".format(
+                    "{}  - Центр {}/{}. Промт точек: {}. По score выбрана маска: центр: {}, размер: {}, score: {:.3f}".format(
                         s.CR_CLEAR_cons,
                         idx + 1,
                         len(center_of_mass_original_list),
