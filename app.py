@@ -293,6 +293,7 @@ def process(operation_mode, source_files, out_path):
             print("Обрабатываем изображение из файла: {}".format(img_file_base_name))
 
             # Вызываем функцию обработки по базовому алгоритму
+            # TODO: замерить время
             result_dict = w.baseline(img,
                                      Tool_list,
                                      verbose=s.VERBOSE)
@@ -302,11 +303,10 @@ def process(operation_mode, source_files, out_path):
             result_mask1024_centers = result_dict['result_mask1024_centers']              # маска с визуализацией центров масс масок
             result_image_final = result_dict['result_image_final']                        #  выходная маска в оригинальном разрешении
 
-            # Имя выходного файла в оригинальном разрешении
+            # Имя выходного файла маски в оригинальном разрешении, полученной через ресайз
             out_img_base_name_mask1024 = img_file_base_name[:-4] + "_mask_1024.jpg"
             # Полный путь к выходному файлу
             out_img_file_mask1024 = os.path.join(out_path, out_img_base_name_mask1024)
-
             # Запись изображения
             try:
                 success = cv.imwrite(str(out_img_file_mask1024), result_mask1024_original_size)
@@ -322,8 +322,7 @@ def process(operation_mode, source_files, out_path):
             out_img_base_name_mask1024_centers = img_file_base_name[:-4] + "_mask_centers_1024.jpg"
             # Полный путь к выходному файлу
             out_img_file_centers_mask1024 = os.path.join(out_path, out_img_base_name_mask1024_centers)
-
-            # Запись изображения центров масс в разрешении 1024
+            # Запись изображения
             try:
                 success = cv.imwrite(str(out_img_file_centers_mask1024), result_mask1024_centers)
                 if success:
@@ -334,17 +333,16 @@ def process(operation_mode, source_files, out_path):
             except Exception as e:
                 print(f'Произошла ошибка при сохранении файла: {e}')
 
-            # Имя выходного файла маски в оригинальном разрешении
+            # Имя выходного файла комбинированной маски в оригинальном разрешении
             out_img_base_name_original_size = img_file_base_name[:-4] + "_mask_W{}xH{}.jpg".format(result_image_final.shape[1],
                                                                                                    result_image_final.shape[0])
             # Полный путь к выходному файлу
             out_img_file_original_size = os.path.join(out_path, out_img_base_name_original_size)
-
             # Запись изображения
             try:
                 success = cv.imwrite(str(out_img_file_original_size), result_image_final)
                 if success:
-                    print("Сохранили маску, полученную в оригинальном разрешении: {}".format(out_img_file_original_size))
+                    print("Сохранили комбинированную маску, полученную в оригинальном разрешении: {}".format(out_img_file_original_size))
                 else:
                     print(f'Не удалось сохранить файл {out_img_file_original_size}')
             except Exception as e:

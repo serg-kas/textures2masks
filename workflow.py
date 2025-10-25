@@ -76,7 +76,8 @@ def get_images_simple(source_files, verbose=False):
     return result
 
 
-def find_non_overlapping_masks(data, iou_threshold=0.5):
+def find_non_overlapping_masks(data,
+                               iou_threshold=0.5):
     """
     Находит элементы из списка словарей, маски которых не пересекаются друг с другом по критерию IoU
 
@@ -111,8 +112,8 @@ def find_non_overlapping_masks(data, iou_threshold=0.5):
             non_overlapping_list.append(item)
         else:
             counter_overlapping += 1
-    print("{}Отбросили {} пересекающихся масок".format(s.CR_CLEAR_cons, counter_overlapping))
-    print("{}Нашли {} не пересекающихся масок".format(s.CR_CLEAR_cons, len(non_overlapping_list)))
+    print("{}  Отбросили {} пересекающихся масок".format(s.CR_CLEAR_cons, counter_overlapping))
+    print("{}  Нашли {} не пересекающихся масок".format(s.CR_CLEAR_cons, len(non_overlapping_list)))
     return non_overlapping_list
 
 
@@ -225,7 +226,12 @@ def baseline(img,
     """
     Алгоритм обработки изображения через центры масс
 
+    TODO: предусмотреть возможность окончания работы только после создания масок в разрешении 1024
+
     """
+    if verbose:
+        print("Алгоритм BaseLine обработки через центры масс")
+
     # Получаем модель
     tool_model_sam2 = t.get_tool_by_name('model_sam2', tool_list=tool_list)
 
@@ -254,7 +260,7 @@ def baseline(img,
                                                    verbose=s.VERBOSE)
     if mask_generator is not None:
         if verbose:
-            print("Успешно инициализирован генератор масок")
+            print("  Успешно инициализирован генератор масок")
     else:
         pass
         # TODO: если нет модели, выйти с ошибкой или пустым результатом
@@ -267,7 +273,7 @@ def baseline(img,
     end_time = time.time()
     tool_model_sam2.counter += 1  # счетчик использования модели
     if verbose:
-        print("Получили список масок: {}, время {:.2f} c.".format(len(sam2_result), end_time - start_time))
+        print("  Получили список масок: {}, время {:.2f} c.".format(len(sam2_result), end_time - start_time))
 
     # Сортируем результаты по увеличению площади маски
     sam2_result_sorted = sorted(sam2_result,
@@ -297,7 +303,7 @@ def baseline(img,
             print("\r  Взяли маску площадью: {}".format(res['area']), end="")
         else:
             print("\r  Пропустили маску площадью: {}".format(res['area']), end="")
-    print("{}Собрали список масок в разрешении 1024: {}".format(s.CR_CLEAR_cons, len(mask_list)))
+    print("{}  Собрали список масок в разрешении 1024: {}".format(s.CR_CLEAR_cons, len(mask_list)))
 
     # Формируем выходную маску объединением отобранных
     if verbose:
@@ -306,7 +312,7 @@ def baseline(img,
     for mask in mask_list:
         combined_mask = np.logical_or(combined_mask, mask)
     if verbose:
-        print("Сформировали выходную маску размерности: {}".format(combined_mask.shape))
+        print("  Сформировали выходную маску размерности: {}".format(combined_mask.shape))
 
     # Ресайз к оригинальному разрешению маски, полученной через разрешение 1024
     result_mask1024 = convert_mask_to_image(combined_mask)
@@ -322,11 +328,11 @@ def baseline(img,
         binary_mask = mask1024.astype(np.uint8)
         center_of_mass_list.append(compute_center_of_mass_cv(binary_mask))
     if verbose:
-        print("Рассчитали центры масс в разрешении 1024: {}".format(len(mask1024_list)))
+        print("Рассчитали центры масс в разрешении 1024: {}".format(len(center_of_mass_list)))
 
     # Максимальный размер маски в разрешении 1024, которая поместится в 1024 пиксела в оригинальном разрешении
     max_mask_size_1024 = int(1024 * max(height, width) / max(H, W))
-    print("Максимальный размер маски в разрешении 1024, "
+    print("  Максимальный размер маски в разрешении 1024, "
           "которая поместится в окно 1024 пиксела в оригинальном разрешении: {}".format(max_mask_size_1024))
 
     # Визуализируем рассчитанные центры масс в разрешении 1024
@@ -344,9 +350,8 @@ def baseline(img,
     # u.show_image_cv(result_mask1024_centers, title=str(result_mask1024_centers.shape))
 
     # Пересчитываем центры масс к оригинальному разрешению
-    if verbose:
-        print("Пересчитываем центры масс к оригинальному разрешению")
-    result_mask_original_centers = result_mask1024_original_size.copy()
+    # TODO: Визуализацию не используем
+    # result_mask_original_centers = result_mask1024_original_size.copy()
     center_of_mass_original_list = []
     for center in center_of_mass_list:
         X_1024, Y_1024 = center
@@ -355,16 +360,18 @@ def baseline(img,
         X = int(X)
         Y = int(Y)
         center_of_mass_original_list.append((X, Y))
-        #
-        radius = int(5 * W / 1024)
-        result_mask_original_centers = cv.circle(result_mask_original_centers, (X, Y), radius, s.blue, -1)
+
+        # radius = int(5 * W / 1024)
+        # result_mask_original_centers = cv.circle(result_mask_original_centers, (X, Y), radius, s.blue, -1)
     # u.show_image_cv(u.resize_image_cv(result_mask_original_centers, img_size=1024), title=str(result_mask_original_centers.shape))
+    if verbose:
+        print("  Пересчитали центры масс к оригинальному разрешению: {}".format(len(center_of_mass_original_list)))
 
     # Инициализация предиктора
     predictor = sam2_model.get_predictor(tool_model_sam2.model, verbose=s.VERBOSE)
     if predictor is not None:
         if verbose:
-            print("Предиктор инициализирован успешно")
+            print("  Предиктор инициализирован успешно")
     else:
         pass
         # TODO: если нет предиктора, выйти с ошибкой или пустым результатом
@@ -393,17 +400,20 @@ def baseline(img,
         mask1024_center_list.append(mask1024_center_img)
         counter_crop_1024 += 1
     if verbose:
-        print("Собрали кропов вокруг центров в разрешении 1024: {}".format(counter_crop_1024))
+        print("  Собрали кропов вокруг центров в разрешении 1024: {}".format(counter_crop_1024))
+
+    # Сегментация в оригинальном разрешении вокруг центров
+    if verbose:
+        print("Сегментация в оригинальном разрешении вокруг рассчитанных центров")
 
     # Ниже какого уровня score применять алгоритм выбора
     SCORE_TRESHOLD = s.SAM2_score_threshold
     if verbose:
-        print("Тресхолд score, ниже которого применяется алгоритм отбора масок по IoU: {}".format(SCORE_TRESHOLD))
+        print("  Тресхолд score, ниже которого применяется алгоритм отбора масок по IoU: {}".format(SCORE_TRESHOLD))
 
-    # Цикл обработки кропов (сегментация в оригинальном разрешении вокруг центров)
-    print("Сегментация в оригинальном разрешении вокруг рассчитанных центров")
+    # Цикл обработки кропов
     counter_crop = 0
-    mask_promted_list = []  # список получаемых масок
+    mask_promted_list = []        # список получаемых масок
     mask_promted_coord_list = []  # список координат кропов на текстуре оригинального разрешения
     for idx, center_original in enumerate(center_of_mass_original_list[:]):
         Xc, Yc = center_original
@@ -470,7 +480,7 @@ def baseline(img,
 
             if verbose:
                 print(
-                    "{}  Центр {}/{}. Промт, точек: {}. По score выбрана маска: центр: {}, размер: {}, score: {:.3f}".format(
+                    "{}  - центр {}/{}. Промт, точек: {}. По score выбрана маска: центр: {}, размер: {}, score: {:.3f}".format(
                         s.CR_CLEAR_cons,
                         idx + 1,
                         len(center_of_mass_original_list),
@@ -504,7 +514,7 @@ def baseline(img,
 
             if verbose:
                 print(
-                    "{}  Центр {}/{}. Промт, точек: {}. По IoU выбрана маска: центр: {}, размер: {}, score: {:.3f}".format(
+                    "{}  - Центр {}/{}. Промт точек: {}. По IoU выбрана маска: центр: {}, размер: {}, score: {:.3f}".format(
                         s.CR_CLEAR_cons,
                         idx + 1,
                         len(center_of_mass_original_list),
@@ -515,7 +525,7 @@ def baseline(img,
             #
             counter_crop += 1
     if verbose:
-        print("\nВсего обработано кропов: {}".format(counter_crop))
+        print("\n  Всего обработано кропов: {}".format(counter_crop))
 
     # Собираем выходную маску в оригинальном разрешении
     combined_original_mask = np.zeros((H, W), dtype=bool)
@@ -529,7 +539,7 @@ def baseline(img,
 
         combined_original_mask = np.logical_or(combined_original_mask, mask_temp)
     if verbose:
-        print("Собрали выходную маску в оригинальном разрешении: {}".format(combined_original_mask.shape))
+        print("Собрали комбинированную выходную маску в оригинальном разрешении: {}".format(combined_original_mask.shape))
 
     # Результат обработки в оригинальном разрешении
     result_image_final = convert_mask_to_image(combined_original_mask)

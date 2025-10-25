@@ -29,8 +29,8 @@ def get_model_sam2(config_file,
     :return: model: загруженная модель
     """
     if verbose:
-        print("  Загружаем файл конфигурации модели: {}".format(config_file))
-        print("  Загружаем файл чекпоинта модели: {}".format(model_file))
+        print("Загружаем файл конфигурации модели: {}".format(config_file))
+        print("Загружаем файл чекпоинта модели: {}".format(model_file))
     time_0 = time.perf_counter()
 
     #
@@ -71,7 +71,7 @@ def get_mask_generator(model, verbose=False):
     :return: model: загруженная модель
     """
     if verbose:
-        print("  Инициализируем генератор масок")
+        print("Инициализируем генератор масок:")
     time_0 = time.perf_counter()
     #
     mask_generator = SAM2AutomaticMaskGenerator(model)
@@ -91,7 +91,7 @@ def get_predictor(model, verbose=False):
     :return: model: загруженная модель
     """
     if verbose:
-        print("Инициализируем предиктор")
+        print("Инициализируем предиктор:")
     time_0 = time.perf_counter()
     #
     predictor = SAM2ImagePredictor(model)
