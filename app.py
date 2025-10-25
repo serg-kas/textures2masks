@@ -293,7 +293,6 @@ def process(operation_mode, source_files, out_path):
             print("Обрабатываем изображение из файла: {}".format(img_file_base_name))
 
             # Вызываем функцию обработки по базовому алгоритму
-            # TODO: замерить время
             result_dict = w.baseline(img,
                                      Tool_list,
                                      verbose=s.VERBOSE)
@@ -318,7 +317,7 @@ def process(operation_mode, source_files, out_path):
             except Exception as e:
                 print(f'Произошла ошибка при сохранении файла: {e}')
 
-            # Имя выходного файла центров масс масок в разрешении 1024
+            # Имя выходного файла центров масок в разрешении 1024
             out_img_base_name_mask1024_centers = img_file_base_name[:-4] + "_mask_centers_1024.jpg"
             # Полный путь к выходному файлу
             out_img_file_centers_mask1024 = os.path.join(out_path, out_img_base_name_mask1024_centers)
