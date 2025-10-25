@@ -16,5 +16,7 @@ eva-decord
 #
 python-dotenv
 pytz
-
+#
+scikit-learn
+scipy
 

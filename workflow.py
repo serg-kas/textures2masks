@@ -25,15 +25,10 @@ import time
 # import config
 import settings as s
 import tool_case as t
-# import helpers.log
+# import helpers.log_utils as l
 import helpers.utils as u
+import helpers.adaptive_mask_filter as m
 import sam2_model
-
-
-
-
-
-
 
 # Цвета
 black = s.black
@@ -291,23 +286,28 @@ def baseline(img,
     if s.AUTO_CALCULATE_AREAS:
         areas = [res['area'] for res in non_overlapping_result]
         if areas:
-            # Статистика по площадям
+            # Статистика площадей
             if verbose:
                 print("  Статистика площадей: min={:.2f}, max={:.2f}, median={:.2f}".format(min(areas),
                                                                                             max(areas),
                                                                                             np.median(areas)))
-            #
             # area_min, area_max = u.calculate_area_thresholds(areas,iqr_multiplier=1.5)
             # area_min, area_max = u.calculate_area_thresholds_quantile(areas,lower_quantile=0.05,upper_quantile=0.95)
-            area_min, area_max = u.calculate_area_thresholds_quantile(areas,lower_quantile=0.2,upper_quantile=0.2)
+            area_min, area_max = m.adaptive_area_thresholds(areas, sensitivity='medium')
+
             if verbose:
+                # Показываем распределение
+                hist, bins = np.histogram(areas, bins=min(10, len(areas)))
+                print("  Распределение площадей:")
+                for i in range(len(hist)):
+                    print(f"    {bins[i]:.1f}-{bins[i + 1]:.1f}: {hist[i]} масок")
                 print("  Автоматически рассчитаны пороги: от {:.2f} до {:.2f}".format(area_min, area_max))
-
-
+                print("  Будет отобрано масок в диапазоне: {} из {}".format(sum(area_min <= a <= area_max for a in areas),
+                                                                            len(areas)))
+    #
     else:
         if verbose:
             print("  Берем пределы из настроек: min={}, max={}".format(area_min, area_max))
-
     #
     mask_list = []
     for res in non_overlapping_result:

@@ -4,12 +4,16 @@
 import numpy as np
 import math
 import re
-#
+# from sklearn.cluster import KMeans
+# from sklearn.mixture import GaussianMixture
+# from scipy import stats
+# import warnings
+
 import cv2 as cv
 from PIL import Image  # ImageDraw, ImageFont
 # from imutils import perspective, auto_canny
 import matplotlib.pyplot as plt
-#
+
 import io
 import json
 import base64
@@ -19,9 +23,8 @@ import os
 from datetime import datetime, timezone, timedelta
 # import inspect
 # import importlib
-#
+
 import settings as s
-from settings import white
 
 
 # #############################################################
@@ -311,7 +314,7 @@ def rotate_image_cv(image, angle, simple_way=False, resize_to_original=False):
                                (width, height),
                                flags=cv.INTER_LINEAR,
                                borderMode = cv.BORDER_CONSTANT,
-                               borderValue = white)
+                               borderValue = s.white)
         return result
 
     else:
@@ -333,7 +336,7 @@ def rotate_image_cv(image, angle, simple_way=False, resize_to_original=False):
                                (bound_w, bound_h),
                                flags=cv.INTER_LINEAR,
                                borderMode=cv.BORDER_CONSTANT,
-                               borderValue=white)
+                               borderValue=s.white)
 
         #
         if resize_to_original:
@@ -2407,7 +2410,6 @@ def calculate_average_color_with_outliers(image, points, color_threshold=30):
     return avg_bgr_tuple, filtered_points
 
 
-
 # from scipy.spatial import cKDTree
 # import random
 #
@@ -2518,43 +2520,3 @@ def calculate_average_color_with_outliers(image, points, color_threshold=30):
 #
 #     else:
 #         raise ValueError(f"Unknown method: {method}. Use 'grid', 'poisson' or 'random'")
-
-
-def calculate_area_thresholds(areas, iqr_multiplier=1.5):
-    """
-    Автоматически рассчитывает пороги для фильтрации масок по площади
-    используя межквартильный размах (IQR) для отсечения выбросов
-    """
-    if not areas:
-        return 0, float('inf')
-
-    areas_array = np.array(areas)
-    Q1 = np.percentile(areas_array, 25)
-    Q3 = np.percentile(areas_array, 75)
-    IQR = Q3 - Q1
-
-    # Расчет порогов
-    lower_bound = Q1 - iqr_multiplier * IQR
-    upper_bound = Q3 + iqr_multiplier * IQR
-
-    # Гарантируем, что нижний порог не отрицательный
-    area_min = max(0, lower_bound)
-    area_max = upper_bound
-
-    return area_min, area_max
-
-
-def calculate_area_thresholds_quantile(areas,
-                                       lower_quantile=0.05,
-                                       upper_quantile=0.95):
-    """
-    Рассчитывает пороги используя квантили
-    """
-    if not areas:
-        return 0, float('inf')
-
-    areas_array = np.array(areas)
-    area_min = np.quantile(areas_array, lower_quantile)
-    area_max = np.quantile(areas_array, upper_quantile)
-
-    return area_min, area_max
