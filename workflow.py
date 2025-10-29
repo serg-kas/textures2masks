@@ -222,6 +222,7 @@ def baseline(img,
     Алгоритм обработки изображения через центры масс
 
     TODO: предусмотреть возможность окончания работы только после создания масок в разрешении 1024
+    TODO: возвращать не только изображения, но и маски и/или другие даннные
 
     """
     if verbose:
@@ -558,8 +559,9 @@ def baseline(img,
 
     return {
         "result_mask1024": result_mask1024,                             # маска в разрешении 1024
-        "result_mask1024_original_size": result_mask1024_original_size, # маска в оригинальном разрешении, полученная ресайзом
-        "result_mask1024_centers": result_mask1024_centers,             # визуализация центров масс
+        "result_mask1024_centers": result_mask1024_centers,             # визуализация центров масс в разрешении 1024
+        "result_mask1024_original_size": result_mask1024_original_size, # маска в оригинальном разрешении, полученная ресайзом из 1024
+        'center_of_mass_original_list': center_of_mass_original_list,   # центры масс масок, пересчитанные в оригинальное разрешение
         "result_image_final": result_image_final                        # выходная маска в оригинальном разрешении
     }
 

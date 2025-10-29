@@ -298,8 +298,8 @@ def process(operation_mode, source_files, out_path):
                                      verbose=s.VERBOSE)
 
             # result_mask1024 = result_dict['result_mask1024']                              # маска в разрешении 1024
-            result_mask1024_original_size = result_dict['result_mask1024_original_size']  # маска в оригинальном разрешении полученная через разрешение 1024
             result_mask1024_centers = result_dict['result_mask1024_centers']              # маска с визуализацией центров масс масок
+            result_mask1024_original_size = result_dict['result_mask1024_original_size']  # маска в оригинальном разрешении полученная через разрешение 1024
             result_image_final = result_dict['result_image_final']                        #  выходная маска в оригинальном разрешении
 
             # Имя выходного файла маски в оригинальном разрешении, полученной через ресайз
