@@ -93,8 +93,8 @@ OPERATION_MODE_DICT = {
                        'help':'Справочная информация',
                        'self_test':'Тестовый запуск',
                        'workflow_baseline':'Базовый алгоритм',
-                       'workflow_tiling':'Алгоритм на основе тайлинга - НА ПАУЗЕ',
-                       # 'workflow_active_contours':'Алгоритм с улучшением маски по контурам - НОВЫЙ',
+                       'workflow_active_contours':'Алгоритм с активными контурами',
+                       'workflow_tiling':'Алгоритм на основе тайлинга - НА ПАУЗЕ'
 }
 OPERATION_MODE_LIST = list(OPERATION_MODE_DICT.keys())
 DEFAULT_MODE = OPERATION_MODE_LIST[0]  # режим работы по умолчанию

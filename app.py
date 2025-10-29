@@ -252,9 +252,132 @@ def process(operation_mode, source_files, out_path):
 
 
     # ################## workflow_baseline #####№№#############
-    # Рабочий режим обработки изображения с созданием выходной маски
+    # Базовый режим обработки изображения с созданием выходной маски
+    # промптами от центров масс масок полученных в разрешении 1024
     # #########################################################
     if operation_mode == 'workflow_baseline':
+        # Загружаем только изображения
+        img_file_list = u.get_files_by_type(source_files, s.ALLOWED_IMAGES)
+        if len(img_file_list) < 1:
+            print("Не нашли изображений для обработки")
+        #
+        img_list = w.get_images_simple(img_file_list, verbose=s.VERBOSE)
+
+        # #############################################
+        # Загрузка МОДЕЛЕЙ и сохранение их в список
+        # экземпляров КЛАССА Tool
+        # #############################################
+        print(u.txt_separator('=', s.CONS_COLUMNS,
+                              txt=' Загрузка и сохранение моделей ', txt_align='center'))
+
+        # Загружаем модель SAM2 в класс Tool
+        Tool_list = [t.Tool('model_sam2',
+                            sam2_model.get_model_sam2(s.SAM2_config_file,
+                                                      s.SAM2_checkpoint_file,
+                                                      force_cuda=s.SAM2_force_cuda,
+                                                      verbose=s.VERBOSE),
+                            tool_type='model')]
+        # tool_model_sam2 = t.get_tool_by_name('model_sam2', tool_list=Tool_list)
+
+        # #############################################
+        # Обрабатываем файлы из списка
+        # #############################################
+        print(u.txt_separator('=', s.CONS_COLUMNS,
+                              txt=' Обрабатываем файлы из списка ', txt_align='center'))
+        #
+        time_0 = time.perf_counter()
+        counter_img = 0
+        for img_idx, img in enumerate(img_list):
+            # Имя обрабатываемого файла изображения
+            img_file = img_file_list[img_idx]
+            img_file_base_name = os.path.basename(img_file)
+            print("Обрабатываем изображение из файла: {}".format(img_file_base_name))
+
+            # Вызываем функцию обработки по базовому алгоритму
+            result_dict = w.baseline(img,
+                                     Tool_list,
+                                     verbose=s.VERBOSE)
+
+            # result_mask1024 = result_dict['result_mask1024']                              # маска в разрешении 1024
+            result_mask1024_centers = result_dict['result_mask1024_centers']              # маска с визуализацией центров масс масок
+            result_mask1024_original_size = result_dict['result_mask1024_original_size']  # маска в оригинальном разрешении полученная через разрешение 1024
+            result_image_final = result_dict['result_image_final']                        #  выходная маска в оригинальном разрешении
+
+            # Имя выходного файла маски в оригинальном разрешении, полученной через ресайз
+            out_img_base_name_mask1024 = img_file_base_name[:-4] + "_mask_1024.jpg"
+            # Полный путь к выходному файлу
+            out_img_file_mask1024 = os.path.join(out_path, out_img_base_name_mask1024)
+            # Запись изображения
+            try:
+                success = cv.imwrite(str(out_img_file_mask1024), result_mask1024_original_size)
+                if success:
+                    print("Сохранили в оригинальном разрешении маску, полученную через ресайз от 1024: {}".format(
+                        out_img_file_mask1024))
+                else:
+                    print(f'Не удалось сохранить файл {out_img_file_mask1024}')
+            except Exception as e:
+                print(f'Произошла ошибка при сохранении файла: {e}')
+
+            # Имя выходного файла центров масок в разрешении 1024
+            out_img_base_name_mask1024_centers = img_file_base_name[:-4] + "_mask_centers_1024.jpg"
+            # Полный путь к выходному файлу
+            out_img_file_centers_mask1024 = os.path.join(out_path, out_img_base_name_mask1024_centers)
+            # Запись изображения
+            try:
+                success = cv.imwrite(str(out_img_file_centers_mask1024), result_mask1024_centers)
+                if success:
+                    print(
+                        "Сохранили визуализацию центров масс масок в разрешении 1024: {}".format(out_img_file_centers_mask1024))
+                else:
+                    print(f'Не удалось сохранить файл {out_img_file_centers_mask1024}')
+            except Exception as e:
+                print(f'Произошла ошибка при сохранении файла: {e}')
+
+            # Имя выходного файла комбинированной маски в оригинальном разрешении
+            out_img_base_name_original_size = img_file_base_name[:-4] + "_mask_W{}xH{}.jpg".format(result_image_final.shape[1],
+                                                                                                   result_image_final.shape[0])
+            # Полный путь к выходному файлу
+            out_img_file_original_size = os.path.join(out_path, out_img_base_name_original_size)
+            # Запись изображения
+            try:
+                success = cv.imwrite(str(out_img_file_original_size), result_image_final)
+                if success:
+                    print("Сохранили комбинированную маску, полученную в оригинальном разрешении: {}".format(out_img_file_original_size))
+                else:
+                    print(f'Не удалось сохранить файл {out_img_file_original_size}')
+            except Exception as e:
+                print(f'Произошла ошибка при сохранении файла: {e}')
+            #
+            counter_img += 1
+        #
+        time_1 = time.perf_counter()
+        print("Обработали изображений: {}, время {:.2f} с.".format(len(img_file_list),
+                                                                   time_1 - time_0))
+
+        # #############################################
+        # Выведем статистику использования ИНСТРУМЕНТОВ
+        # #############################################
+        print(u.txt_separator('=', s.CONS_COLUMNS,
+                              txt=' Статистика использования экземпляров'
+                                  ' КЛАССА Tool (инструментов) ', txt_align='center'))
+        for tool in Tool_list:
+            print("Инструмент (модель) {}, вызывали, раз: {}".format(tool.name, tool.counter))
+
+        # #############################################
+        # Удалим экземпляры КЛАССОВ и ненужные файлы
+        # #############################################
+        print(u.txt_separator('=', s.CONS_COLUMNS,
+                              txt=' Удаление экземпляров КЛАССОВ Tool и ненужных файлов ', txt_align='center'))
+        #
+        time_end = time.time()
+        if s.VERBOSE:
+            print("Общее время выполнения: {:.1f} с.".format(time_end - time_start))
+
+
+    # #################### active_contours ####################
+    # Режим обработки изображения с использованием активных контуров
+    # #########################################################
+    if operation_mode == 'workflow_active_contours':
         # Загружаем только изображения
         img_file_list = u.get_files_by_type(source_files, s.ALLOWED_IMAGES)
         if len(img_file_list) < 1:
