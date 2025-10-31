@@ -445,25 +445,35 @@ def baseline(img,
         Xp = Xc - X1
         Yp = Yc - Y1
 
-        # Готовим промт
+        # Промт - одна точка в центре масс маски
         if s.PROMPT_POINT_RADIUS == 0:
-            # Промт - одна точка в центре масс маски
+            if verbose:
+                print("\nПромт - одна точка в центре масс маски: {}".format((Xc, Yc)))
+
+            #
             promt_point = (Xp, Yp)
             #
             input_point = np.array([promt_point])
             input_label = np.ones(input_point.shape[0])
+
+        # Промт - несколько точек в заданном радиусе от центра масс
         else:
-            pass
-            # Формируем список точек в заданном радиусе
+            if verbose:
+                print("\nПромт - {} точек в радиусе {} от центра масс маски".format(s.PROMPT_POINT_NUMBER,
+                                                                                    s.PROMPT_POINT_RADIUS))
+
+            # Фильтруем точки в заданном радиусе от центра
             radius_points_list = u.get_points_in_radius(image_center.shape,
                                                         (Xp, Yp),
                                                         s.PROMPT_POINT_RADIUS)
 
-            # Фильтруем точки и получаем средний цвет
+            # Фильтруем точки по среднему цвету
             if s.PROMPT_POINT_COLOR_FILTER:
-                _, radius_points_list = u.calculate_average_color_with_outliers(image_center,
-                                                                                radius_points_list,
-                                                                                color_threshold=s.PROMPT_POINT_COLOR_THRESH)
+                avg_color_bgr, radius_points_list = u.calculate_average_color_with_outliers(image_center,
+                                                                                            radius_points_list,
+                                                                                            color_threshold=s.PROMPT_POINT_COLOR_THRESH)
+                if verbose:
+                    print("Точки отфильтрованы по цвету вокруг цвета: {} (b, g, r)".format(avg_color_bgr))
 
             # Оставляем заданное количество точек
             promt_point_list = random.sample(radius_points_list, s.PROMPT_POINT_NUMBER)
