@@ -92,8 +92,8 @@ def get_value_from_env(variable, default_value=None, prefix_name="APP_", verbose
 OPERATION_MODE_DICT = {
                        'help':'Справочная информация',
                        'self_test':'Тестовый запуск',
-                       'workflow_baseline':'Базовый алгоритм',
-                       'workflow_active_contours':'Алгоритм с активными контурами',
+                       'workflow_baseline':'Базовый алгоритм через ресайз к разрешению 1024 - ТЕСТИРУЕТСЯ',
+                       'workflow_contours':'Алгоритм с использованием активных контуров - НАЧАТ',
                        'workflow_tiling':'Алгоритм на основе тайлинга - НА ПАУЗЕ'
 }
 OPERATION_MODE_LIST = list(OPERATION_MODE_DICT.keys())
@@ -141,8 +141,8 @@ SAM2_score_threshold = 0.95
 # Фильтр масок в разрешении 1024 по размеру
 AUTO_CALCULATE_AREAS = get_value_from_env("AUTO_CALCULATE_AREAS", default_value=True)
 #
-AREA_MIN = get_value_from_env("AREA_MIN", default_value=int(1024 * 1024 * 0.0001))
-AREA_MAX = get_value_from_env("AREA_MAX", default_value=int(1024 * 1024 * 0.8))
+AREA_MIN = get_value_from_env("AREA_MIN", default_value=int(1024 * 1024 * 0.01))
+AREA_MAX = get_value_from_env("AREA_MAX", default_value=int(1024 * 1024 * 0.80))
 
 # Расщепление точки промта в заданном радиусе
 PROMPT_POINT_RADIUS = get_value_from_env("PROMPT_POINT_RADIUS", default_value=30)
