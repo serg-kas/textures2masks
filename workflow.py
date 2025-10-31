@@ -448,7 +448,7 @@ def baseline(img,
         # Промт - одна точка в центре масс маски
         if s.PROMPT_POINT_RADIUS == 0:
             if verbose:
-                print("\nПромт - одна точка в центре масс маски: {}".format((Xc, Yc)))
+                print("\n  Промт - одна точка в центре масс маски: {}".format((Xc, Yc)))
 
             #
             promt_point = (Xp, Yp)
@@ -459,8 +459,8 @@ def baseline(img,
         # Промт - несколько точек в заданном радиусе от центра масс
         else:
             if verbose:
-                print("\nПромт - {} точек в радиусе {} от центра масс маски".format(s.PROMPT_POINT_NUMBER,
-                                                                                    s.PROMPT_POINT_RADIUS))
+                print("\n  Промт - {} точек в радиусе {} от центра масс маски".format(s.PROMPT_POINT_NUMBER,
+                                                                                      s.PROMPT_POINT_RADIUS))
 
             # Фильтруем точки в заданном радиусе от центра
             radius_points_list = u.get_points_in_radius(image_center.shape,
@@ -473,7 +473,7 @@ def baseline(img,
                                                                                             radius_points_list,
                                                                                             color_threshold=s.PROMPT_POINT_COLOR_THRESH)
                 if verbose:
-                    print("Точки отфильтрованы по цвету вокруг цвета: {} (b, g, r)".format(avg_color_bgr))
+                    print("  Точки отфильтрованы по цвету вокруг цвета, (b, g, r): {}".format(avg_color_bgr))
 
             # Оставляем заданное количество точек
             promt_point_list = random.sample(radius_points_list, s.PROMPT_POINT_NUMBER)
@@ -502,7 +502,7 @@ def baseline(img,
 
             if verbose:
                 print(
-                    "{}  - Центр {}/{}. Промт точек: {}. По score выбрана маска: центр: {}, размер: {}, score: {:.3f}".format(
+                    "{}  Центр {}/{}. Промт точек: {}. По score выбрана маска: центр: {}, размер: {}, score: {:.3f}".format(
                         s.CR_CLEAR_cons,
                         idx + 1,
                         len(center_of_mass_original_list),
@@ -536,7 +536,7 @@ def baseline(img,
 
             if verbose:
                 print(
-                    "{}  - Центр {}/{}. Промт точек: {}. По IoU выбрана маска: центр: {}, размер: {}, score: {:.3f}".format(
+                    "{}  Центр {}/{}. Промт точек: {}. По IoU выбрана маска: центр: {}, размер: {}, score: {:.3f}".format(
                         s.CR_CLEAR_cons,
                         idx + 1,
                         len(center_of_mass_original_list),
