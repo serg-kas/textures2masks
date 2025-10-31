@@ -543,7 +543,8 @@ def baseline(img,
                         input_point.shape[0],
                         (Xc, Yc),
                         mask_promted_list[-1].shape,
-                        scores[best_iou_idx]))
+                        scores[best_iou_idx]),
+                end="")
             #
             counter_crop += 1
     if verbose:
