@@ -442,13 +442,13 @@ def process(operation_mode, source_files, out_path):
                 print(f'Произошла ошибка при сохранении файла: {e}')
 
 
-            image_bgr_original = img.copy()
             # TODO: разбиение и обработка изображение на тайлы (проверить корректность разбиения и сборки тайлов обратно)
+            image_bgr_original = img.copy()
             tiles_list, coords_list = w.split_into_tiles(image_bgr_original,
                                                          tile_size=s.TILING_SIZE,
                                                          overlap=s.TILING_OVERLAP)
             print("Изображение {} разбито на фрагменты (тайлы): {}".format(img_file, len(tiles_list)))
-            # Сохранение списка тайлов в файлы
+            # # Сохранение списка тайлов в файлы
             # for idx, tile in enumerate(tiles_list):
             #     # Имя выходного файла тайла
             #     out_tile_base_name = img_file_base_name[:-4] + f"_tile_{idx}.jpg"
@@ -457,15 +457,15 @@ def process(operation_mode, source_files, out_path):
             #     if cv.imwrite(str(out_tile_file), tile):
             #         print("  Сохранили тайл: {}".format(out_tile_file))
 
-            # TODO: Обработка каждого тайла ?
-            processed_tiles = [cv.cvtColor(tile, cv.COLOR_BGR2RGB) for tile in tiles_list]
+            # # Обработка каждого тайла
+            # processed_tiles = [cv.cvtColor(tile, cv.COLOR_BGR2RGB) for tile in tiles_list]
 
-            # Сборка выходного изображения
+            # # Сборка выходного изображения
             # image_rgb_reconstructed = w.assemble_image(processed_tiles,
             #                                            coords_list,
             #                                            original_shape=image_bgr_original.shape,
-            #                                            overlap=256)
-            # Сохранение собранного файла
+            #                                            overlap=s.TILING_OVERLAP)
+            # # Сохранение собранного файла
             # out_new_base_name = img_file_base_name[:-4] + "_reconstructed.jpg"
             # # Полный путь к выходному файлу
             # out_new_file = os.path.join(out_path, out_new_base_name)
@@ -479,7 +479,7 @@ def process(operation_mode, source_files, out_path):
                                                                    tile_size=s.TILING_SIZE,
                                                                    overlap=s.TILING_OVERLAP)
             print("Маска в оригинальном разрешении разбита на фрагменты (тайлы): {}".format(len(mask_tiles_list)))
-            # Сохранение списка тайлов масок в файлы
+            # # Сохранение списка тайлов масок в файлы
             # for idx, tile in enumerate(mask_tiles_list):
             #     # Имя выходного файла тайла
             #     out_tile_base_name = img_file_base_name[:-4] + f"_mask_tile_{idx}.jpg"
@@ -566,6 +566,7 @@ def process(operation_mode, source_files, out_path):
 
                 return filter_masks_by_area(masks, scores, min_area, max_area)
 
+
             # Инициализация предиктора
             predictor = sam2_model.get_predictor(tool_model_sam2.model, verbose=s.VERBOSE)
             if predictor is not None:
@@ -574,7 +575,6 @@ def process(operation_mode, source_files, out_path):
             else:
                 pass
                 # TODO: если нет предиктора, выйти с ошибкой или пустым результатом
-
 
 
             # Цикл обработки тайлов (сегментация в оригинальном разрешении)
@@ -601,7 +601,7 @@ def process(operation_mode, source_files, out_path):
 
 
                 # 3. Генерация точечных промптов
-                point_coords, point_labels = prepare_prompts_from_mask(custom_mask, num_points=100)
+                point_coords, point_labels = prepare_prompts_from_mask(custom_mask, num_points=10000)
 
                 # 4. Нормализация координат точек к размеру тайла
                 if len(point_coords) > 0:
@@ -618,18 +618,21 @@ def process(operation_mode, source_files, out_path):
                 masks, scores, _ = predictor.predict(
                     point_coords=point_coords_normalized,
                     point_labels=point_labels,
+                    # point_coords=None,
+                    # point_labels=None,
                     box=None,
                     mask_input=mask_input[None, :, :],
+                    # mask_input=None,
                     multimask_output=True
                 )
 
                 # TODO: фильтр масок по размеру
                 # masks, filtered_scores, valid_indices = filter_masks_by_area(masks, scores, 1000, 800000)
-                # masks, filtered_scores, valid_indices = filter_masks_by_area_relative(masks,
-                #                                                                       scores,
-                #                                                                       curr_tile.shape,
-                #                                                                       min_area_ratio=0.1,
-                #                                                                       max_area_ratio=0.8)
+                masks, filtered_scores, valid_indices = filter_masks_by_area_relative(masks,
+                                                                                      scores,
+                                                                                      curr_tile.shape,
+                                                                                      min_area_ratio=0.1,
+                                                                                      max_area_ratio=0.8)
 
 
                 tool_model_sam2.counter += 1
@@ -661,7 +664,7 @@ def process(operation_mode, source_files, out_path):
             # print(image_bgr_tiling.shape)
 
             # TODO Убираем шум
-            kernel = np.ones((3, 3), np.uint8)
+            kernel = np.ones((9, 9), np.uint8)
             mask_cleaned = cv.morphologyEx(image_bgr_tiling,
                                            cv.MORPH_OPEN, kernel)
 
