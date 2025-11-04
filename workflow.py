@@ -217,11 +217,12 @@ def calculate_mask_dimensions_cv(mask):
 
 def baseline(img,
              tool_list=None,
+             quick_exit=False,
              verbose=False):
     """
-    Алгоритм обработки изображения через центры масс
+    Алгоритм обработки изображения через центры масс.
+    Если quick_exit=True, то выходит после формирования маски в оригинальном разрешении через ресайз от 1024
 
-    TODO: предусмотреть возможность окончания работы только после создания масок в разрешении 1024
     TODO: возвращать не только изображения, но и маски и/или другие данные
 
     """
@@ -379,6 +380,18 @@ def baseline(img,
     if verbose:
         print("  Пересчитали центры масс к оригинальному разрешению: {}".format(len(center_of_mass_original_list)))
 
+    # Быстрое окончание без формирования финальной маски
+    if quick_exit:
+        if verbose:
+            print("Быстрый выход без формирования финальной маски в оригинальном разрешении")
+        return {
+            "result_mask1024": result_mask1024,                              # маска в разрешении 1024
+            "result_mask1024_centers": result_mask1024_centers,              # визуализация центров масс в разрешении 1024
+            "result_mask1024_original_size": result_mask1024_original_size,  # маска в оригинальном разрешении, полученная ресайзом из 1024
+            'center_of_mass_original_list': center_of_mass_original_list,    # центры масс масок, пересчитанные в оригинальное разрешение
+            "result_image_final": None                                       # финальная маска в оригинальном разрешении НЕ СОЗДАВАЛАСЬ
+        }
+
     # Инициализация предиктора
     predictor = sam2_model.get_predictor(tool_model_sam2.model, verbose=s.VERBOSE)
     if predictor is not None:
@@ -447,8 +460,8 @@ def baseline(img,
 
         # Промт - одна точка в центре масс маски
         if s.PROMPT_POINT_RADIUS == 0:
-            if verbose:
-                print("\n  Промт - одна точка в центре масс маски: {}".format((Xc, Yc)))
+            # if verbose:
+            #     print("\n  Промт - одна точка в центре масс маски: {}".format((Xc, Yc)))
 
             #
             promt_point = (Xp, Yp)
@@ -458,9 +471,10 @@ def baseline(img,
 
         # Промт - несколько точек в заданном радиусе от центра масс
         else:
-            if verbose:
-                print("\n  Промт - {} точек в радиусе {} от центра масс маски".format(s.PROMPT_POINT_NUMBER,
-                                                                                      s.PROMPT_POINT_RADIUS))
+            # if verbose:
+            #     print("\n  Промт - {} точек в радиусе {} от центра масс маски: {}".format(s.PROMPT_POINT_NUMBER,
+            #                                                                               s.PROMPT_POINT_RADIUS,
+            #                                                                               (Xc, Yc)))
 
             # Фильтруем точки в заданном радиусе от центра
             radius_points_list = u.get_points_in_radius(image_center.shape,
@@ -472,8 +486,8 @@ def baseline(img,
                 avg_color_bgr, radius_points_list = u.calculate_average_color_with_outliers(image_center,
                                                                                             radius_points_list,
                                                                                             color_threshold=s.PROMPT_POINT_COLOR_THRESH)
-                if verbose:
-                    print("  Точки отфильтрованы по цвету вокруг цвета, (b, g, r): {}".format(avg_color_bgr))
+                # if verbose:
+                #     print("\n  Точки отфильтрованы по цвету вокруг цвета, (b, g, r): {}".format(avg_color_bgr))
 
             # Оставляем заданное количество точек
             promt_point_list = random.sample(radius_points_list, s.PROMPT_POINT_NUMBER)
@@ -573,7 +587,7 @@ def baseline(img,
         "result_mask1024_centers": result_mask1024_centers,             # визуализация центров масс в разрешении 1024
         "result_mask1024_original_size": result_mask1024_original_size, # маска в оригинальном разрешении, полученная ресайзом из 1024
         'center_of_mass_original_list': center_of_mass_original_list,   # центры масс масок, пересчитанные в оригинальное разрешение
-        "result_image_final": result_image_final                        # выходная маска в оригинальном разрешении
+        "result_image_final": result_image_final                        # финальная маска в оригинальном разрешении
     }
 
 
