@@ -376,7 +376,7 @@ def process(operation_mode, source_files, out_path):
 
 
     # ################## workflow_tiling ######################
-    # TODO: Алгоритм на основе разбития на тайлы
+    # Режим обработки изображения на основе разбития на тайлы
     # #########################################################
     if operation_mode == 'workflow_tiling':
         # Загружаем только изображения
@@ -442,13 +442,14 @@ def process(operation_mode, source_files, out_path):
                 print(f'Произошла ошибка при сохранении файла: {e}')
 
 
-            # TODO: разбиение и обработка изображение на тайлы (проверить корректность разбиения и сборки тайлов обратно)
+            # Разбиение и обработка изображение на тайлы
             image_bgr_original = img.copy()
             tiles_list, coords_list = w.split_into_tiles(image_bgr_original,
                                                          tile_size=s.TILING_SIZE,
                                                          overlap=s.TILING_OVERLAP)
             print("Изображение {} разбито на фрагменты (тайлы): {}".format(img_file, len(tiles_list)))
-            # # Сохранение списка тайлов в файлы
+
+            # Сохранение списка тайлов в файлы
             # for idx, tile in enumerate(tiles_list):
             #     # Имя выходного файла тайла
             #     out_tile_base_name = img_file_base_name[:-4] + f"_tile_{idx}.jpg"
@@ -457,17 +458,17 @@ def process(operation_mode, source_files, out_path):
             #     if cv.imwrite(str(out_tile_file), tile):
             #         print("  Сохранили тайл: {}".format(out_tile_file))
 
-            # # Обработка каждого тайла
+            # Обработка каждого тайла
             # processed_tiles = [cv.cvtColor(tile, cv.COLOR_BGR2RGB) for tile in tiles_list]
 
-            # # Сборка выходного изображения
+            # Сборка выходного изображения
             # image_rgb_reconstructed = w.assemble_image(processed_tiles,
             #                                            coords_list,
             #                                            original_shape=image_bgr_original.shape,
             #                                            overlap=s.TILING_OVERLAP)
-            # # Сохранение собранного файла
+            # Сохранение собранного файла
             # out_new_base_name = img_file_base_name[:-4] + "_reconstructed.jpg"
-            # # Полный путь к выходному файлу
+            # Полный путь к выходному файлу
             # out_new_file = os.path.join(out_path, out_new_base_name)
             # image_bgr_reconstructed = cv.cvtColor(image_rgb_reconstructed, cv.COLOR_RGB2BGR)
             # if cv.imwrite(str(out_new_file), image_bgr_reconstructed):
@@ -479,7 +480,7 @@ def process(operation_mode, source_files, out_path):
                                                                    tile_size=s.TILING_SIZE,
                                                                    overlap=s.TILING_OVERLAP)
             print("Маска в оригинальном разрешении разбита на фрагменты (тайлы): {}".format(len(mask_tiles_list)))
-            # # Сохранение списка тайлов масок в файлы
+            # Сохранение списка тайлов масок в файлы
             # for idx, tile in enumerate(mask_tiles_list):
             #     # Имя выходного файла тайла
             #     out_tile_base_name = img_file_base_name[:-4] + f"_mask_tile_{idx}.jpg"
@@ -488,6 +489,7 @@ def process(operation_mode, source_files, out_path):
             #     if cv.imwrite(str(out_tile_file), tile):
             #         print("  Сохранили тайл маски: {}".format(out_tile_file))
 
+            # TODO: ==============================================================================
             def prepare_prompts_from_mask(mask, num_points=20):
                 """
                 Генерация точечных промптов из маски
@@ -565,7 +567,7 @@ def process(operation_mode, source_files, out_path):
                 max_area = int(total_pixels * max_area_ratio)
 
                 return filter_masks_by_area(masks, scores, min_area, max_area)
-
+            # TODO: ==============================================================================
 
             # Инициализация предиктора
             predictor = sam2_model.get_predictor(tool_model_sam2.model, verbose=s.VERBOSE)
@@ -584,9 +586,10 @@ def process(operation_mode, source_files, out_path):
                 print("  Тайл {}/{}".format(idx+1, len(mask_tiles_list)))
                 #
                 curr_tile = tiles_list[idx]
-                # print(curr_tile.shape, curr_mask.shape)
                 # u.show_image_cv(curr_tile, title='mask_tile')
                 # u.show_image_cv(curr_mask, title='mask_mask')
+
+
 
                 # TODO: собрать все точки - центры масс в пределах данного тайла
 
