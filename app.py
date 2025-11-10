@@ -490,22 +490,50 @@ def process(operation_mode, source_files, out_path):
             #         print("  Сохранили тайл маски: {}".format(out_tile_file))
 
             # TODO: ==============================================================================
-            def prepare_prompts_from_mask(mask, num_points=20):
+            def prepare_prompts_from_mask(mask, num_points=20, min_contour_area=1000, max_contours=10):
                 """
                 Генерация точечных промптов из маски
                 """
                 # Находим контуры в маске
                 contours, _ = cv.findContours(mask, cv.RETR_EXTERNAL, cv.CHAIN_APPROX_SIMPLE)
 
+                # Фильтруем контуры по площади и берем только самые крупные
+                filtered_contours = []
+
+                # Вычисляем площади всех контуров
+                contour_areas = [(i, cv.contourArea(contour)) for i, contour in enumerate(contours)]
+
+                # Сортируем контуры по площади (по убыванию)
+                contour_areas.sort(key=lambda x: x[1], reverse=True)
+
+                # Отбираем контуры, удовлетворяющие критериям
+                for i, area in contour_areas:
+                    if area >= min_contour_area and len(filtered_contours) < max_contours:
+                        filtered_contours.append(contours[i])
+
+                print(f"Найдено контуров: {len(contours)}, отфильтровано: {len(filtered_contours)}")
+                print(f"Площади контуров: {[f'{area:.0f}' for _, area in contour_areas]}")
+
+
+                # Создаем копию маски для визуализации
+                if len(mask.shape) == 2:  # Если маска одноканальная
+                    mask_visual = cv.cvtColor(mask, cv.COLOR_GRAY2BGR)
+                else:
+                    mask_visual = mask.copy()
+
                 point_coords = []
                 point_labels = []
 
-                for contour in contours:
+                # for contour in contours:
+                for contour in filtered_contours:
                     # Добавляем точки вдоль контура
                     for i in range(0, len(contour), max(1, len(contour) // num_points)):
                         point = contour[i][0]
                         point_coords.append([point[0], point[1]])
                         point_labels.append(1)  # foreground
+
+                        # Рисуем точку контура на визуализации (красный)
+                        cv.circle(mask_visual, (point[0], point[1]), 3, (0, 0, 255), -1)
 
                     # Добавляем точки внутри области (центроиды)
                     if len(contour) > 0:
@@ -516,6 +544,10 @@ def process(operation_mode, source_files, out_path):
                             point_coords.append([cx, cy])
                             point_labels.append(1)
 
+                            # Рисуем центроид на визуализации (синий)
+                            cv.circle(mask_visual, (cx, cy), 5, (255, 0, 0), -1)
+
+                # u.show_image_cv(mask_visual, title='')
                 return np.array(point_coords), np.array(point_labels)
 
             def filter_masks_by_area(masks, scores, min_area=100, max_area=100000):
@@ -596,14 +628,16 @@ def process(operation_mode, source_files, out_path):
 
                 # 1. Подготовка маски-промпта
                 custom_mask = cv.cvtColor(curr_mask, cv.COLOR_BGR2GRAY)
+                # custom_mask = 255 - custom_mask
                 low_res_mask = cv.resize(custom_mask.astype(np.uint8), (256, 256), interpolation=cv.INTER_NEAREST)
-                # u.show_image_cv(low_res_mask, title='low_res_mask')
+                # u.show_image_cv(low_res_mask, title='low_res_mask: {}'.format(low_res_mask.shape))
 
                 # 2. Нормализация: [0, 255] -> [0, 1]
                 mask_input = (low_res_mask > 128).astype(np.float32)
+                # u.show_image_cv(mask_input, title='mask_input: {}'.format(mask_input.shape))
 
                 # 3. Генерация точечных промптов
-                point_coords, point_labels = prepare_prompts_from_mask(custom_mask, num_points=10000)
+                point_coords, point_labels = prepare_prompts_from_mask(custom_mask, num_points=1000)
 
                 # 4. Нормализация координат точек к размеру тайла
                 if len(point_coords) > 0:
@@ -630,11 +664,11 @@ def process(operation_mode, source_files, out_path):
 
                 # TODO: фильтр масок по размеру
                 # masks, filtered_scores, valid_indices = filter_masks_by_area(masks, scores, 1000, 800000)
-                masks, filtered_scores, valid_indices = filter_masks_by_area_relative(masks,
-                                                                                      scores,
-                                                                                      curr_tile.shape,
-                                                                                      min_area_ratio=0.1,
-                                                                                      max_area_ratio=0.8)
+                # masks, filtered_scores, valid_indices = filter_masks_by_area_relative(masks,
+                #                                                                       scores,
+                #                                                                       curr_tile.shape,
+                #                                                                       min_area_ratio=0.1,
+                #                                                                       max_area_ratio=0.8)
 
 
                 tool_model_sam2.counter += 1
