@@ -602,7 +602,6 @@ def process(operation_mode, source_files, out_path):
                 # 2. Нормализация: [0, 255] -> [0, 1]
                 mask_input = (low_res_mask > 128).astype(np.float32)
 
-
                 # 3. Генерация точечных промптов
                 point_coords, point_labels = prepare_prompts_from_mask(custom_mask, num_points=10000)
 
