@@ -530,22 +530,22 @@ def process(operation_mode, source_files, out_path):
                     for i in range(0, len(contour), max(1, len(contour) // num_points)):
                         point = contour[i][0]
                         point_coords.append([point[0], point[1]])
-                        point_labels.append(1)  # foreground
+                        point_labels.append(0)  # foreground
 
                         # Рисуем точку контура на визуализации (красный)
                         cv.circle(mask_visual, (point[0], point[1]), 3, (0, 0, 255), -1)
 
                     # Добавляем точки внутри области (центроиды)
-                    if len(contour) > 0:
-                        M = cv.moments(contour)
-                        if M["m00"] != 0:
-                            cx = int(M["m10"] / M["m00"])
-                            cy = int(M["m01"] / M["m00"])
-                            point_coords.append([cx, cy])
-                            point_labels.append(1)
-
-                            # Рисуем центроид на визуализации (синий)
-                            cv.circle(mask_visual, (cx, cy), 5, (255, 0, 0), -1)
+                    # if len(contour) > 0:
+                    #     M = cv.moments(contour)
+                    #     if M["m00"] != 0:
+                    #         cx = int(M["m10"] / M["m00"])
+                    #         cy = int(M["m01"] / M["m00"])
+                    #         point_coords.append([cx, cy])
+                    #         point_labels.append(1)
+                    #
+                    #         # Рисуем центроид на визуализации (синий)
+                    #         cv.circle(mask_visual, (cx, cy), 5, (255, 0, 0), -1)
 
                 # u.show_image_cv(mask_visual, title='')
                 return np.array(point_coords), np.array(point_labels)
@@ -628,7 +628,7 @@ def process(operation_mode, source_files, out_path):
 
                 # 1. Подготовка маски-промпта
                 custom_mask = cv.cvtColor(curr_mask, cv.COLOR_BGR2GRAY)
-                # custom_mask = 255 - custom_mask
+                custom_mask = 255 - custom_mask
                 low_res_mask = cv.resize(custom_mask.astype(np.uint8), (256, 256), interpolation=cv.INTER_NEAREST)
                 # u.show_image_cv(low_res_mask, title='low_res_mask: {}'.format(low_res_mask.shape))
 
@@ -637,7 +637,7 @@ def process(operation_mode, source_files, out_path):
                 # u.show_image_cv(mask_input, title='mask_input: {}'.format(mask_input.shape))
 
                 # 3. Генерация точечных промптов
-                point_coords, point_labels = prepare_prompts_from_mask(custom_mask, num_points=1000)
+                point_coords, point_labels = prepare_prompts_from_mask(255 - custom_mask, num_points=1000)
 
                 # 4. Нормализация координат точек к размеру тайла
                 if len(point_coords) > 0:
