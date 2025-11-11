@@ -686,6 +686,7 @@ def process(operation_mode, source_files, out_path):
 
                 #
                 masks_img = masks[mask_idx].astype(np.uint8) * 255
+                masks_img = 255 - masks_img
                 masks_img = cv.cvtColor(masks_img, cv.COLOR_GRAY2BGR)
                 processed_mask_list.append(masks_img)
                 # u.show_image_cv(u.resize_image_cv(masks_img), title='masks_img')
