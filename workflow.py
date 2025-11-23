@@ -706,6 +706,120 @@ def assemble_image(tiles, coords, original_shape, overlap):
     return result / weights[..., np.newaxis]
 
 
+def prepare_prompts_from_mask(mask, num_points=20, min_contour_area=1000, max_contours=10):
+    """
+    Генерация точечных промптов из маски
+    """
+    # Находим контуры в маске
+    contours, _ = cv.findContours(mask, cv.RETR_EXTERNAL, cv.CHAIN_APPROX_SIMPLE)
+
+    # Фильтруем контуры по площади и берем только самые крупные
+    filtered_contours = []
+
+    # Вычисляем площади всех контуров
+    contour_areas = [(i, cv.contourArea(contour)) for i, contour in enumerate(contours)]
+
+    # Сортируем контуры по площади (по убыванию)
+    contour_areas.sort(key=lambda x: x[1], reverse=True)
+
+    # Отбираем контуры, удовлетворяющие критериям
+    for i, area in contour_areas:
+        if area >= min_contour_area and len(filtered_contours) < max_contours:
+            filtered_contours.append(contours[i])
+
+    print(f"Найдено контуров: {len(contours)}, отфильтровано: {len(filtered_contours)}")
+    print(f"Площади контуров: {[f'{area:.0f}' for _, area in contour_areas]}")
+
+    # Создаем копию маски для визуализации
+    if len(mask.shape) == 2:  # Если маска одноканальная
+        mask_visual = cv.cvtColor(mask, cv.COLOR_GRAY2BGR)
+    else:
+        mask_visual = mask.copy()
+
+    point_coords = []
+    point_labels = []
+
+    # for contour in contours:
+    for contour in filtered_contours:
+        # Добавляем точки вдоль контура
+        for i in range(0, len(contour), max(1, len(contour) // num_points)):
+            point = contour[i][0]
+            point_coords.append([point[0], point[1]])
+            point_labels.append(1)  # foreground
+
+            # Рисуем точку контура на визуализации (красный)
+            cv.circle(mask_visual, (point[0], point[1]), 3, (0, 0, 255), -1)
+
+        # Добавляем точки внутри области (центроиды)
+        if len(contour) > 0:
+            M = cv.moments(contour)
+            if M["m00"] != 0:
+                cx = int(M["m10"] / M["m00"])
+                cy = int(M["m01"] / M["m00"])
+                point_coords.append([cx, cy])
+                point_labels.append(1)
+
+                # Рисуем центроид на визуализации (синий)
+                cv.circle(mask_visual, (cx, cy), 5, (255, 0, 0), -1)
+
+    # u.show_image_cv(mask_visual, title='')
+    return np.array(point_coords), np.array(point_labels)
 
 
+def filter_masks_by_area(masks,
+                         scores,
+                         min_area=100,
+                         max_area=100000):
+    """
+    Фильтрует маски по площади в пикселях
+
+    Args:
+        masks: массив масок shape (N, H, W)
+        scores: массив scores shape (N,)
+        min_area: минимальная площадь в пикселях
+        max_area: максимальная площадь в пикселях
+
+    Returns:
+        filtered_masks: отфильтрованные маски
+        filtered_scores: соответствующие scores
+        valid_indices: индексы валидных масок
+    """
+    filtered_masks = []
+    filtered_scores = []
+    valid_indices = []
+
+    for i, mask in enumerate(masks):
+        area = np.sum(mask)  # площадь в пикселях
+
+        if min_area <= area <= max_area:
+            filtered_masks.append(mask)
+            filtered_scores.append(scores[i])
+            valid_indices.append(i)
+
+    if filtered_masks:
+        return np.array(filtered_masks), np.array(filtered_scores), valid_indices
+    else:
+        return np.array([]), np.array([]), []
+
+
+def filter_masks_by_area_relative(masks,
+                                  scores,
+                                  image_shape,
+                                  min_area_ratio=0.001,
+                                  max_area_ratio=0.8):
+    """
+    Фильтрует маски по относительной площади (доля от общего размера изображения)
+
+    Args:
+        masks: массив масок shape (N, H, W)
+        scores: массив scores shape (N,)
+        image_shape: размер изображения (H, W)
+        min_area_ratio: минимальная доля площади (0.001 = 0.1%)
+        max_area_ratio: максимальная доля площади (0.8 = 80%)
+    """
+    total_pixels = image_shape[0] * image_shape[1]
+    min_area = int(total_pixels * min_area_ratio)
+    max_area = int(total_pixels * max_area_ratio)
+
+    return filter_masks_by_area(masks, scores, min_area, max_area)
 
