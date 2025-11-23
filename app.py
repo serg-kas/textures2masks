@@ -498,7 +498,6 @@ def process(operation_mode, source_files, out_path):
                 pass
                 # TODO: если нет предиктора, выйти с ошибкой или пустым результатом
 
-
             # Цикл обработки тайлов (сегментация в оригинальном разрешении)
             print("Сегментация тайлов в оригинальном разрешении")
             processed_mask_list = []
@@ -506,47 +505,83 @@ def process(operation_mode, source_files, out_path):
                 print("  Тайл {}/{}".format(idx+1, len(mask_tiles_list)))
                 #
                 curr_tile = tiles_list[idx]
-                # u.show_image_cv(curr_tile, title='mask_tile')
-                # u.show_image_cv(curr_mask, title='mask_mask')
+                # u.show_image_cv(u.resize_image_cv(np.concatenate((curr_tile, curr_mask), axis=1), img_size=1024), title='tile | mask')
 
-                # TODO: собрать все точки - центры масс в пределах данного тайла
+                if s.TILING_INVERSE_MODE:
+                    # 1. Подготовка маски-промпта
+                    custom_mask = cv.cvtColor(curr_mask, cv.COLOR_BGR2GRAY)
+                    custom_mask = 255 - custom_mask
 
-                # 1. Подготовка маски-промпта
-                custom_mask = cv.cvtColor(curr_mask, cv.COLOR_BGR2GRAY)
-                custom_mask = 255 - custom_mask
-                low_res_mask = cv.resize(custom_mask.astype(np.uint8), (256, 256), interpolation=cv.INTER_NEAREST)
-                # u.show_image_cv(low_res_mask, title='low_res_mask: {}'.format(low_res_mask.shape))
+                    low_res_mask = cv.resize(custom_mask.astype(np.uint8), (256, 256), interpolation=cv.INTER_NEAREST)
+                    # u.show_image_cv(low_res_mask, title='low_res_mask: {}'.format(low_res_mask.shape))
 
-                # 2. Нормализация: [0, 255] -> [0, 1]
-                mask_input = (low_res_mask > 128).astype(np.float32)
-                # u.show_image_cv(mask_input, title='mask_input: {}'.format(mask_input.shape))
+                    # 2. Нормализация: [0, 255] -> [0, 1]
+                    mask_input = (low_res_mask > 128).astype(np.float32)
+                    # u.show_image_cv(mask_input, title='mask_input: {}'.format(mask_input.shape))
 
-                # 3. Генерация точечных промптов
-                point_coords, point_labels = sam2_model.prepare_prompts_from_mask(255 - custom_mask, num_points=1000)
-                point_coords, point_labels = sam2_model.prepare_prompts_from_mask(custom_mask, num_points=1000)
+                    # 3. Генерация точечных промптов
+                    # point_coords, point_labels = sam2_model.prepare_prompts_from_mask(custom_mask, num_points=1000)
 
-                # 4. Нормализация координат точек к размеру тайла
-                if len(point_coords) > 0:
-                    height, width = curr_tile.shape[:2]
-                    point_coords_normalized = point_coords / np.array([width, height])
+                    # 4. Нормализация координат точек к размеру тайла
+                    # if len(point_coords) > 0:
+                    #     height, width = curr_tile.shape[:2]
+                    #     point_coords_normalized = point_coords / np.array([width, height])
+                    # else:
+                    #     point_coords_normalized = None
+                    #     point_labels = None
+
+                    # 5. Установка изображения
+                    predictor.set_image(curr_tile)
+
+                    # 6. Предсказание с комбинацией промптов
+                    # TODO: Используем только промпт маской
+                    masks, scores, _ = predictor.predict(
+                        # point_coords=point_coords_normalized,
+                        # point_labels=point_labels,
+                        point_coords=None,
+                        point_labels=None,
+                        box=None,
+                        mask_input=mask_input[None, :, :],
+                        # mask_input=None,
+                        multimask_output=True
+                    )
                 else:
-                    point_coords_normalized = None
-                    point_labels = None
+                    # 1. Подготовка маски-промпта
+                    custom_mask = cv.cvtColor(curr_mask, cv.COLOR_BGR2GRAY)
 
-                # 5. Установка изображения
-                predictor.set_image(curr_tile)
+                    low_res_mask = cv.resize(custom_mask.astype(np.uint8), (256, 256), interpolation=cv.INTER_NEAREST)
+                    # u.show_image_cv(low_res_mask, title='low_res_mask: {}'.format(low_res_mask.shape))
 
-                # 6. TODO: Предсказание с комбинацией промптов
-                masks, scores, _ = predictor.predict(
-                    # point_coords=point_coords_normalized,
-                    # point_labels=point_labels,
-                    point_coords=None,
-                    point_labels=None,
-                    box=None,
-                    mask_input=mask_input[None, :, :],
-                    # mask_input=None,
-                    multimask_output=True
-                )
+                    # 2. Нормализация: [0, 255] -> [0, 1]
+                    mask_input = (low_res_mask > 128).astype(np.float32)
+                    # u.show_image_cv(mask_input, title='mask_input: {}'.format(mask_input.shape))
+
+                    # 3. Генерация точечных промптов
+                    # TODO: собрать все точки - центры масс в пределах данного тайла или достаточно того что делает prepare_prompts_from_mask?
+                    point_coords, point_labels = sam2_model.prepare_prompts_from_mask(custom_mask, num_points=1000)
+
+                    # 4. Нормализация координат точек к размеру тайла
+                    if len(point_coords) > 0:
+                        height, width = curr_tile.shape[:2]
+                        point_coords_normalized = point_coords / np.array([width, height])
+                    else:
+                        point_coords_normalized = None
+                        point_labels = None
+
+                    # 5. Установка изображения
+                    predictor.set_image(curr_tile)
+
+                    # 6. Предсказание с комбинацией промптов
+                    masks, scores, _ = predictor.predict(
+                        point_coords=point_coords_normalized,
+                        point_labels=point_labels,
+                        # point_coords=None,
+                        # point_labels=None,
+                        box=None,
+                        mask_input=mask_input[None, :, :],
+                        # mask_input=None,
+                        multimask_output=True
+                    )
                 tool_model_sam2.counter += 1
                 # print(masks.shape, scores.shape)
 
@@ -572,7 +607,11 @@ def process(operation_mode, source_files, out_path):
 
                 #
                 masks_img = masks[mask_idx].astype(np.uint8) * 255
-                masks_img = 255 - masks_img
+
+                # В инверсном режиме готовую маску надо инвертировать
+                if s.TILING_INVERSE_MODE:
+                    masks_img = 255 - masks_img
+
                 masks_img = cv.cvtColor(masks_img, cv.COLOR_GRAY2BGR)
                 processed_mask_list.append(masks_img)
                 # u.show_image_cv(u.resize_image_cv(masks_img), title='masks_img')
