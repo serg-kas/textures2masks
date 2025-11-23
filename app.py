@@ -499,7 +499,11 @@ def process(operation_mode, source_files, out_path):
                 # TODO: если нет предиктора, выйти с ошибкой или пустым результатом
 
             # Цикл обработки тайлов (сегментация в оригинальном разрешении)
-            print("Сегментация тайлов в оригинальном разрешении")
+            if s.TILING_INVERSE_MODE:
+                print("Сегментация тайлов в оригинальном разрешении c инверсией")
+            else:
+                print("Сегментация тайлов в оригинальном разрешении без инверсии")
+
             processed_mask_list = []
             for idx, curr_mask in enumerate(mask_tiles_list):
                 print("  Тайл {}/{}".format(idx+1, len(mask_tiles_list)))
@@ -607,7 +611,6 @@ def process(operation_mode, source_files, out_path):
 
                 #
                 masks_img = masks[mask_idx].astype(np.uint8) * 255
-
                 # В инверсном режиме готовую маску надо инвертировать
                 if s.TILING_INVERSE_MODE:
                     masks_img = 255 - masks_img

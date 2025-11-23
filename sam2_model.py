@@ -126,8 +126,8 @@ def prepare_prompts_from_mask(mask,
         if area >= min_contour_area and len(filtered_contours) < max_contours:
             filtered_contours.append(contours[i])
 
-    print(f"Найдено контуров: {len(contours)}, отфильтровано: {len(filtered_contours)}")
-    print(f"Площади контуров: {[f'{area:.0f}' for _, area in contour_areas]}")
+    print(f"    Найдено контуров: {len(contours)}, отфильтровано: {len(filtered_contours)}")
+    print(f"    Площади контуров (первые 5): {[f'{area:.0f}' for _, area in contour_areas][:5]}")
 
     # Создаем копию маски для визуализации
     if len(mask.shape) == 2:  # Если маска одноканальная
