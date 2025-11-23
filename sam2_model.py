@@ -2,7 +2,7 @@
 Функции, связанные с вызовом моделей
 и обработкой результатов
 """
-# import numpy as np
+import numpy as np
 import cv2 as cv
 import time
 #
@@ -100,6 +100,69 @@ def get_predictor(model, verbose=False):
     if verbose:
         print("  Время подготовки предиктора, с: {:.2f}".format(time_1 - time_0))
     return predictor
+
+
+def prepare_prompts_from_mask(mask,
+                              num_points=20,
+                              min_contour_area=1000,
+                              max_contours=10):
+    """
+    Генерация точечных промптов из маски
+    """
+    # Находим контуры в маске
+    contours, _ = cv.findContours(mask, cv.RETR_EXTERNAL, cv.CHAIN_APPROX_SIMPLE)
+
+    # Фильтруем контуры по площади и берем только самые крупные
+    filtered_contours = []
+
+    # Вычисляем площади всех контуров
+    contour_areas = [(i, cv.contourArea(contour)) for i, contour in enumerate(contours)]
+
+    # Сортируем контуры по площади (по убыванию)
+    contour_areas.sort(key=lambda x: x[1], reverse=True)
+
+    # Отбираем контуры, удовлетворяющие критериям
+    for i, area in contour_areas:
+        if area >= min_contour_area and len(filtered_contours) < max_contours:
+            filtered_contours.append(contours[i])
+
+    print(f"Найдено контуров: {len(contours)}, отфильтровано: {len(filtered_contours)}")
+    print(f"Площади контуров: {[f'{area:.0f}' for _, area in contour_areas]}")
+
+    # Создаем копию маски для визуализации
+    if len(mask.shape) == 2:  # Если маска одноканальная
+        mask_visual = cv.cvtColor(mask, cv.COLOR_GRAY2BGR)
+    else:
+        mask_visual = mask.copy()
+
+    point_coords = []
+    point_labels = []
+
+    # for contour in contours:
+    for contour in filtered_contours:
+        # Добавляем точки вдоль контура
+        for i in range(0, len(contour), max(1, len(contour) // num_points)):
+            point = contour[i][0]
+            point_coords.append([point[0], point[1]])
+            point_labels.append(1)  # foreground
+
+            # Рисуем точку контура на визуализации (красный)
+            cv.circle(mask_visual, (point[0], point[1]), 3, (0, 0, 255), -1)
+
+        # Добавляем точки внутри области (центроиды)
+        if len(contour) > 0:
+            M = cv.moments(contour)
+            if M["m00"] != 0:
+                cx = int(M["m10"] / M["m00"])
+                cy = int(M["m01"] / M["m00"])
+                point_coords.append([cx, cy])
+                point_labels.append(1)
+
+                # Рисуем центроид на визуализации (синий)
+                cv.circle(mask_visual, (cx, cy), 5, (255, 0, 0), -1)
+
+    # u.show_image_cv(mask_visual, title='')
+    return np.array(point_coords), np.array(point_labels)
 
 
 # #########################################################

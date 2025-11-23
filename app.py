@@ -522,8 +522,8 @@ def process(operation_mode, source_files, out_path):
                 # u.show_image_cv(mask_input, title='mask_input: {}'.format(mask_input.shape))
 
                 # 3. Генерация точечных промптов
-                # point_coords, point_labels = w.prepare_prompts_from_mask(255 - custom_mask, num_points=1000)
-                point_coords, point_labels = w.prepare_prompts_from_mask(custom_mask, num_points=1000)
+                point_coords, point_labels = sam2_model.prepare_prompts_from_mask(255 - custom_mask, num_points=1000)
+                point_coords, point_labels = sam2_model.prepare_prompts_from_mask(custom_mask, num_points=1000)
 
                 # 4. Нормализация координат точек к размеру тайла
                 if len(point_coords) > 0:
@@ -536,7 +536,7 @@ def process(operation_mode, source_files, out_path):
                 # 5. Установка изображения
                 predictor.set_image(curr_tile)
 
-                # 6. Предсказание с комбинацией промптов
+                # 6. TODO: Предсказание с комбинацией промптов
                 masks, scores, _ = predictor.predict(
                     # point_coords=point_coords_normalized,
                     # point_labels=point_labels,
@@ -550,12 +550,12 @@ def process(operation_mode, source_files, out_path):
                 tool_model_sam2.counter += 1
                 # print(masks.shape, scores.shape)
 
-                # TODO: фильтр масок по размеру
-                # masks, filtered_scores, valid_indices = w.filter_masks_by_area(masks,
+                # TODO: Фильтр масок по размеру
+                # masks, filtered_scores, valid_indices = u.filter_masks_by_area(masks,
                 #                                                                scores,
                 #                                                                1000,
                 #                                                                800000)
-                # masks, filtered_scores, valid_indices = w.filter_masks_by_area_relative(masks,
+                # masks, filtered_scores, valid_indices = u.filter_masks_by_area_relative(masks,
                 #                                                                         scores,
                 #                                                                         curr_tile.shape,
                 #                                                                         min_area_ratio=0.1,

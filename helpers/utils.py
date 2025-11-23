@@ -2520,3 +2520,61 @@ def calculate_average_color_with_outliers(image, points, color_threshold=30):
 #
 #     else:
 #         raise ValueError(f"Unknown method: {method}. Use 'grid', 'poisson' or 'random'")
+
+
+def filter_masks_by_area(masks,
+                         scores,
+                         min_area=100,
+                         max_area=100000):
+    """
+    Фильтрует маски по площади в пикселях
+
+    Args:
+        masks: массив масок shape (N, H, W)
+        scores: массив scores shape (N,)
+        min_area: минимальная площадь в пикселях
+        max_area: максимальная площадь в пикселях
+
+    Returns:
+        filtered_masks: отфильтрованные маски
+        filtered_scores: соответствующие scores
+        valid_indices: индексы валидных масок
+    """
+    filtered_masks = []
+    filtered_scores = []
+    valid_indices = []
+
+    for i, mask in enumerate(masks):
+        area = np.sum(mask)  # площадь в пикселях
+
+        if min_area <= area <= max_area:
+            filtered_masks.append(mask)
+            filtered_scores.append(scores[i])
+            valid_indices.append(i)
+
+    if filtered_masks:
+        return np.array(filtered_masks), np.array(filtered_scores), valid_indices
+    else:
+        return np.array([]), np.array([]), []
+
+
+def filter_masks_by_area_relative(masks,
+                                  scores,
+                                  image_shape,
+                                  min_area_ratio=0.001,
+                                  max_area_ratio=0.8):
+    """
+    Фильтрует маски по относительной площади (доля от общего размера изображения)
+
+    Args:
+        masks: массив масок shape (N, H, W)
+        scores: массив scores shape (N,)
+        image_shape: размер изображения (H, W)
+        min_area_ratio: минимальная доля площади (0.001 = 0.1%)
+        max_area_ratio: максимальная доля площади (0.8 = 80%)
+    """
+    total_pixels = image_shape[0] * image_shape[1]
+    min_area = int(total_pixels * min_area_ratio)
+    max_area = int(total_pixels * max_area_ratio)
+
+    return filter_masks_by_area(masks, scores, min_area, max_area)
