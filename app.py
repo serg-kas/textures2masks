@@ -658,10 +658,10 @@ def process(operation_mode, source_files, out_path):
             print("Общее время выполнения: {:.1f} с.".format(time_end - time_start))
 
 
-    # ################### workflow_contours ###################
-    # TODO: Режим обработки изображения с использованием активных контуров
+    # ######################## new1 ###########################
+    # Режим new1
     # #########################################################
-    if operation_mode == 'workflow_contours':
+    if operation_mode == 'new1':
         # Загружаем только изображения
         img_file_list = u.get_files_by_type(source_files, s.ALLOWED_IMAGES)
         if len(img_file_list) < 1:
