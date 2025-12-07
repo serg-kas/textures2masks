@@ -449,7 +449,7 @@ def process(operation_mode, source_files, out_path):
                                                          overlap=s.TILING_OVERLAP)
             print("Изображение {} разбито на фрагменты (тайлы): {}".format(img_file, len(tiles_list)))
 
-            # Сохранение списка тайлов в файлы
+            # # Сохранение списка тайлов в файлы
             # for idx, tile in enumerate(tiles_list):
             #     # Имя выходного файла тайла
             #     out_tile_base_name = img_file_base_name[:-4] + f"_tile_{idx}.jpg"
@@ -461,26 +461,25 @@ def process(operation_mode, source_files, out_path):
             # TODO: Обработка каждого тайла
             # processed_tiles = [cv.cvtColor(tile, cv.COLOR_BGR2RGB) for tile in tiles_list]
 
-            # Сборка выходного изображения
+            # # Сборка выходного изображения
             # image_rgb_reconstructed = w.assemble_image(processed_tiles,
             #                                            coords_list,
             #                                            original_shape=image_bgr_original.shape,
             #                                            overlap=s.TILING_OVERLAP)
-            # Сохранение собранного файла
+            # # Сохранение собранного файла
             # out_new_base_name = img_file_base_name[:-4] + "_reconstructed.jpg"
-            # Полный путь к выходному файлу
+            # # Полный путь к выходному файлу
             # out_new_file = os.path.join(out_path, out_new_base_name)
             # image_bgr_reconstructed = cv.cvtColor(image_rgb_reconstructed, cv.COLOR_RGB2BGR)
             # if cv.imwrite(str(out_new_file), image_bgr_reconstructed):
             #     print("  Сохранили выходной файл: {}".format(out_new_file))
-
 
             # Разбиение маски, полученной через разрешение 1024 на тайлы
             mask_tiles_list, mask_coords_list = w.split_into_tiles(result_mask1024_original_size,
                                                                    tile_size=s.TILING_SIZE,
                                                                    overlap=s.TILING_OVERLAP)
             print("Маска в оригинальном разрешении разбита на фрагменты (тайлы): {}".format(len(mask_tiles_list)))
-            # Сохранение списка тайлов масок в файлы
+            # # Сохранение списка тайлов масок в файлы
             # for idx, tile in enumerate(mask_tiles_list):
             #     # Имя выходного файла тайла
             #     out_tile_base_name = img_file_base_name[:-4] + f"_mask_tile_{idx}.jpg"
