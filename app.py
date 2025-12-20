@@ -629,17 +629,17 @@ def process(operation_mode, source_files, out_path):
             # print(image_bgr_tiling.shape)
 
             # TODO Убираем шум
-            kernel = np.ones((9, 9), np.uint8)
-            mask_cleaned = cv.morphologyEx(image_bgr_tiling,
-                                           cv.MORPH_OPEN, kernel)
+            # kernel = np.ones((9, 9), np.uint8)
+            # mask_cleaned = cv.morphologyEx(image_bgr_tiling,
+            #                                cv.MORPH_OPEN, kernel)
 
             # TODO Заполняем небольшие отверстия
-            image_bgr_tiling = cv.morphologyEx(mask_cleaned,
-                                           cv.MORPH_CLOSE, kernel)
+            # image_bgr_tiling = cv.morphologyEx(mask_cleaned,
+            #                                cv.MORPH_CLOSE, kernel)
             # u.show_image_cv(u.resize_image_cv(image_bgr_tiling), title='masks_img_cleaned')
 
+            # Переходим к трехканальному изображению
             image_bgr_tiling = cv.cvtColor(image_bgr_tiling, cv.COLOR_GRAY2BGR)
-
 
             # Имя выходного файла тайла
             out_new_base_name = img_file_base_name[:-4] + "_tiling_mask.jpg"
