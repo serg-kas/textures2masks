@@ -523,15 +523,19 @@ def process(operation_mode, source_files, out_path):
                     # u.show_image_cv(mask_input, title='mask_input: {}'.format(mask_input.shape))
 
                     # 3. Генерация точечных промптов
-                    # point_coords, point_labels = sam2_model.prepare_prompts_from_mask(custom_mask, num_points=1000)
+                    point_coords, point_labels, custom_mask_parced = sam2_model.prepare_prompts_from_mask(custom_mask,
+                                                                                                          num_points=20,
+                                                                                                          min_contour_area=10000,
+                                                                                                          max_contours=10)
+                    # u.show_image_cv(custom_mask_parced, title=str(custom_mask_parced.shape))
 
                     # 4. Нормализация координат точек к размеру тайла
-                    # if len(point_coords) > 0:
-                    #     height, width = curr_tile.shape[:2]
-                    #     point_coords_normalized = point_coords / np.array([width, height])
-                    # else:
-                    #     point_coords_normalized = None
-                    #     point_labels = None
+                    if len(point_coords) > 0:
+                        height, width = curr_tile.shape[:2]
+                        point_coords_normalized = point_coords / np.array([width, height])
+                    else:
+                        point_coords_normalized = None
+                        point_labels = None
 
                     # 5. Установка изображения
                     predictor.set_image(curr_tile)
@@ -539,10 +543,10 @@ def process(operation_mode, source_files, out_path):
                     # 6. Предсказание с комбинацией промптов
                     # TODO: Используем только промпт маской
                     masks, scores, _ = predictor.predict(
-                        # point_coords=point_coords_normalized,
-                        # point_labels=point_labels,
-                        point_coords=None,
-                        point_labels=None,
+                        point_coords=point_coords_normalized,
+                        point_labels=point_labels,
+                        # point_coords=None,
+                        # point_labels=None,
                         box=None,
                         mask_input=mask_input[None, :, :],
                         # mask_input=None,
@@ -561,7 +565,11 @@ def process(operation_mode, source_files, out_path):
 
                     # 3. Генерация точечных промптов
                     # TODO: собрать все точки - центры масс в пределах данного тайла или достаточно того что делает prepare_prompts_from_mask?
-                    point_coords, point_labels = sam2_model.prepare_prompts_from_mask(custom_mask, num_points=1000)
+                    point_coords, point_labels, custom_mask_parced = sam2_model.prepare_prompts_from_mask(custom_mask,
+                                                                                                          num_points=20,
+                                                                                                          min_contour_area=10000,
+                                                                                                          max_contours=10)
+                    # u.show_image_cv(custom_mask_parced, title=str(custom_mask_parced.shape))
 
                     # 4. Нормализация координат точек к размеру тайла
                     if len(point_coords) > 0:

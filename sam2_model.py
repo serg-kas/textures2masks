@@ -10,6 +10,9 @@ import torch
 from sam2.build_sam import build_sam2
 from sam2.sam2_image_predictor import SAM2ImagePredictor
 from sam2.automatic_mask_generator import SAM2AutomaticMaskGenerator
+#
+# import helpers.utils as u
+import settings as s
 
 
 # #########################################################
@@ -144,10 +147,11 @@ def prepare_prompts_from_mask(mask,
         for i in range(0, len(contour), max(1, len(contour) // num_points)):
             point = contour[i][0]
             point_coords.append([point[0], point[1]])
-            point_labels.append(1)  # foreground
+            # point_labels.append(1)  # foreground
+            point_labels.append(0)  # foreground
 
             # Рисуем точку контура на визуализации (красный)
-            cv.circle(mask_visual, (point[0], point[1]), 3, (0, 0, 255), -1)
+            cv.circle(mask_visual, (point[0], point[1]), 3, s.red, -1)
 
         # Добавляем точки внутри области (центроиды)
         if len(contour) > 0:
@@ -157,12 +161,13 @@ def prepare_prompts_from_mask(mask,
                 cy = int(M["m01"] / M["m00"])
                 point_coords.append([cx, cy])
                 point_labels.append(1)
+                # point_labels.append(0)
 
                 # Рисуем центроид на визуализации (синий)
-                cv.circle(mask_visual, (cx, cy), 5, (255, 0, 0), -1)
+                cv.circle(mask_visual, (cx, cy), 5, s.blue, -1)
 
     # u.show_image_cv(mask_visual, title='')
-    return np.array(point_coords), np.array(point_labels)
+    return np.array(point_coords), np.array(point_labels), mask_visual
 
 
 # #########################################################
