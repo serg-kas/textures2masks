@@ -229,7 +229,7 @@ def baseline(img,
     if verbose:
         print("Алгоритм BaseLine обработки через центры масс")
 
-    # Получаем модель
+    # TODO: Получаем модель (если модели нет поднимать ошибку?)
     tool_model_sam2 = t.get_tool_by_name('model_sam2', tool_list=tool_list)
 
     # Исходное изображение
