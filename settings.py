@@ -162,7 +162,7 @@ TILING_INVERSE_MODE = get_value_from_env("TILING_INVERSE_MODE", default_value=Fa
 
 # Построцессинг (удаление шума и заливка мелких деталей)
 TILING_POST_PROCESS = get_value_from_env("TILING_POST_PROCESS", default_value=False)
-# TODO: параметры пост-процессинга
+TILING_POST_PROCESS_KERNEL = get_value_from_env("TILING_POST_PROCESS_KERNEL", default_value=(9,9))
 
 
 # #############################################################

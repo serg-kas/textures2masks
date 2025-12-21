@@ -527,7 +527,7 @@ def process(operation_mode, source_files, out_path):
 
                     # 3. Генерация точечных промптов
                     point_coords, point_labels, custom_mask_parced = sam2_model.prepare_prompts_from_mask(custom_mask,
-                                                                                                          num_points=10000,
+                                                                                                          num_points=1000,
                                                                                                           min_contour_area=10000,
                                                                                                           max_contours=10)
                     # u.show_image_cv(custom_mask_parced, title=str(custom_mask_parced.shape))
@@ -544,15 +544,11 @@ def process(operation_mode, source_files, out_path):
                     predictor.set_image(curr_tile)
 
                     # 6. Предсказание с комбинацией промптов
-                    # TODO: Используем только промпт маской
                     masks, scores, _ = predictor.predict(
                         point_coords=point_coords_normalized,
                         point_labels=point_labels,
-                        # point_coords=None,
-                        # point_labels=None,
                         box=None,
                         mask_input=mask_input[None, :, :],
-                        # mask_input=None,
                         multimask_output=True
                     )
                 else:
@@ -566,13 +562,12 @@ def process(operation_mode, source_files, out_path):
                     # u.show_image_cv(low_res_mask, title='low_res_mask: {}'.format(low_res_mask.shape))
 
                     # 2. Нормализация: [0, 255] -> [0, 1]
-                    mask_input = (low_res_mask > 64).astype(np.float32)
+                    mask_input = (low_res_mask > 128).astype(np.float32)
                     # u.show_image_cv(mask_input, title='mask_input: {}'.format(mask_input.shape))
 
                     # 3. Генерация точечных промптов
-                    # TODO: собрать все точки - центры масс в пределах данного тайла или достаточно того что делает prepare_prompts_from_mask?
                     point_coords, point_labels, custom_mask_parced = sam2_model.prepare_prompts_from_mask(custom_mask,
-                                                                                                          num_points=20,
+                                                                                                          num_points=1000,
                                                                                                           min_contour_area=10000,
                                                                                                           max_contours=10)
                     # u.show_image_cv(custom_mask_parced, title=str(custom_mask_parced.shape))
@@ -592,11 +587,8 @@ def process(operation_mode, source_files, out_path):
                     masks, scores, _ = predictor.predict(
                         point_coords=point_coords_normalized,
                         point_labels=point_labels,
-                        # point_coords=None,
-                        # point_labels=None,
                         box=None,
                         mask_input=mask_input[None, :, :],
-                        # mask_input=None,
                         multimask_output=True
                     )
                 tool_model_sam2.counter += 1
@@ -634,7 +626,7 @@ def process(operation_mode, source_files, out_path):
 
                 # Сохраняем полученную маску в список
                 processed_mask_list.append(masks_img)
-                # u.show_image_cv(u.resize_image_cv(masks_img), title='masks_img')
+                # u.show_image_cv(u.resize_image_cv(masks_img), title=str(masks_img.shape))
 
             # Сборка выходной маски
             image_bgr_tiling = w.assemble_image(processed_mask_list,
@@ -643,13 +635,13 @@ def process(operation_mode, source_files, out_path):
                                                 overlap=s.TILING_OVERLAP)
             # u.show_image_cv(u.resize_image_cv(image_bgr_tiling), title='masks_img')
 
-            # Переходим к ч/б изображению TODO: это нужно только при пост-обработке?
-            image_bgr_tiling = cv.cvtColor(image_bgr_tiling, cv.COLOR_BGR2GRAY)
-            # print(image_bgr_tiling.shape)
-
             if s.TILING_POST_PROCESS:
+                # Переходим к ч/б изображению
+                image_bgr_tiling = cv.cvtColor(image_bgr_tiling, cv.COLOR_BGR2GRAY)
+                # print(image_bgr_tiling.shape)
+
                 # Убираем шум
-                kernel = np.ones((9, 9), np.uint8)  # TODO: вынести в параметры ?
+                kernel = np.ones(s.TILING_POST_PROCESS_KERNEL, np.uint8)
                 mask_cleaned = cv.morphologyEx(image_bgr_tiling,
                                                cv.MORPH_OPEN, kernel)
 
@@ -658,8 +650,8 @@ def process(operation_mode, source_files, out_path):
                                                cv.MORPH_CLOSE, kernel)
                 # u.show_image_cv(u.resize_image_cv(image_bgr_tiling), title='masks_img_cleaned')
 
-            # Переходим к трехканальному изображению TODO: это нужно только при пост-обработке?
-            image_bgr_tiling = cv.cvtColor(image_bgr_tiling, cv.COLOR_GRAY2BGR)
+                # Переходим к трехканальному изображению
+                image_bgr_tiling = cv.cvtColor(image_bgr_tiling, cv.COLOR_GRAY2BGR)
 
             # Имя выходного файла тайла
             out_new_base_name = img_file_base_name[:-4] + "_tiling_mask.jpg"

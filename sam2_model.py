@@ -154,19 +154,18 @@ def prepare_prompts_from_mask(mask,
             cv.circle(mask_visual, (point[0], point[1]), 3, s.red, -1)
 
         # Добавляем точки внутри области (центроиды)
-        # if len(contour) > 0:
-        #     M = cv.moments(contour)
-        #     if M["m00"] != 0:
-        #         cx = int(M["m10"] / M["m00"])
-        #         cy = int(M["m01"] / M["m00"])
-        #         point_coords.append([cx, cy])
-        #         point_labels.append(1)
-        #         # point_labels.append(0)
-        #
-        #         # Рисуем центроид на визуализации (синий)
-        #         cv.circle(mask_visual, (cx, cy), 5, s.blue, -1)
+        if len(contour) > 0:
+            M = cv.moments(contour)
+            if M["m00"] != 0:
+                cx = int(M["m10"] / M["m00"])
+                cy = int(M["m01"] / M["m00"])
+                point_coords.append([cx, cy])
+                point_labels.append(1)
+                # point_labels.append(0)
 
-    # u.show_image_cv(mask_visual, title='')
+                # Рисуем центроид на визуализации (синий)
+                cv.circle(mask_visual, (cx, cy), 5, s.blue, -1)
+
     return np.array(point_coords), np.array(point_labels), mask_visual
 
 
