@@ -534,7 +534,7 @@ def process(operation_mode, source_files, out_path):
                     # u.show_image_cv(custom_mask_parced, title=str(custom_mask_parced.shape))
 
                     # 3-2. Генерация точечных промптов на инвертированном изображении
-                    point_coords_inv, point_labels_inv, custom_mask_parced_inv = sam2_model.prepare_prompts_from_mask(custom_mask,
+                    point_coords_inv, point_labels_inv, custom_mask_parced_inv = sam2_model.prepare_prompts_from_mask(custom_mask_inv,
                                                                                                                       num_points=1000,
                                                                                                                       min_contour_area=10000,
                                                                                                                       max_contours=10,
@@ -584,7 +584,7 @@ def process(operation_mode, source_files, out_path):
                     # u.show_image_cv(custom_mask_parced, title=str(custom_mask_parced.shape))
 
                     # 3-2. Генерация точечных промптов на инверсном изображении
-                    point_coords_inv, point_labels_inv, custom_mask_parced_inv = sam2_model.prepare_prompts_from_mask(custom_mask,
+                    point_coords_inv, point_labels_inv, custom_mask_parced_inv = sam2_model.prepare_prompts_from_mask(custom_mask_inv,
                                                                                                                       num_points=1000,
                                                                                                                       min_contour_area=10000,
                                                                                                                       max_contours=10,
