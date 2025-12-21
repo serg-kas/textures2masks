@@ -458,7 +458,7 @@ def process(operation_mode, source_files, out_path):
             #     if cv.imwrite(str(out_tile_file), tile):
             #         print("  Сохранили тайл: {}".format(out_tile_file))
 
-            # TODO: Обработка каждого тайла
+            # TODO: Предобработка каждого тайла
             # processed_tiles = [cv.cvtColor(tile, cv.COLOR_BGR2RGB) for tile in tiles_list]
 
             # # Сборка выходного изображения
@@ -499,9 +499,9 @@ def process(operation_mode, source_files, out_path):
 
             # Цикл обработки тайлов (сегментация в оригинальном разрешении)
             if s.TILING_INVERSE_MODE:
-                print("Сегментация тайлов в оригинальном разрешении c инверсией")
+                print("Сегментация тайлов в оригинальном разрешении c инверсией (предикт швов)")
             else:
-                print("Сегментация тайлов в оригинальном разрешении без инверсии")
+                print("Сегментация тайлов в оригинальном разрешении без инверсии (предикт плиток)")
 
             processed_mask_list = []
             for idx, curr_mask in enumerate(mask_tiles_list):
@@ -511,6 +511,9 @@ def process(operation_mode, source_files, out_path):
                 # u.show_image_cv(u.resize_image_cv(np.concatenate((curr_tile, curr_mask), axis=1), img_size=1024), title='tile | mask')
 
                 if s.TILING_INVERSE_MODE:
+                    """
+                    Предикт швов. Элементы текстуры (плитки) трактуются как фон.
+                    """
                     # 1. Подготовка маски-промпта
                     custom_mask = cv.cvtColor(curr_mask, cv.COLOR_BGR2GRAY)
                     custom_mask = 255 - custom_mask
@@ -553,6 +556,9 @@ def process(operation_mode, source_files, out_path):
                         multimask_output=True
                     )
                 else:
+                    """
+                    Предикт элементов текстуры (плиток). Швы трактуются как фон.
+                    """
                     # 1. Подготовка маски-промпта
                     custom_mask = cv.cvtColor(curr_mask, cv.COLOR_BGR2GRAY)
 
@@ -616,13 +622,17 @@ def process(operation_mode, source_files, out_path):
                 mask_idx = np.argmax(iou_list)
                 # print("iou_list", iou_list, mask_idx)
 
-                #
+                # Берем маску, по выбранному mask_idx и переводим в ч/б изображение
                 masks_img = masks[mask_idx].astype(np.uint8) * 255
+
                 # В инверсном режиме готовую маску надо инвертировать
                 if s.TILING_INVERSE_MODE:
                     masks_img = 255 - masks_img
 
+                # Переходим к трёхканальному изображению TODO: это нужно ?
                 masks_img = cv.cvtColor(masks_img, cv.COLOR_GRAY2BGR)
+
+                # Сохраняем полученную маску в список
                 processed_mask_list.append(masks_img)
                 # u.show_image_cv(u.resize_image_cv(masks_img), title='masks_img')
 
@@ -633,20 +643,22 @@ def process(operation_mode, source_files, out_path):
                                                 overlap=s.TILING_OVERLAP)
             # u.show_image_cv(u.resize_image_cv(image_bgr_tiling), title='masks_img')
 
+            # Переходим к ч/б изображению TODO: это нужно только при пост-обработке?
             image_bgr_tiling = cv.cvtColor(image_bgr_tiling, cv.COLOR_BGR2GRAY)
             # print(image_bgr_tiling.shape)
 
-            # TODO Убираем шум
-            # kernel = np.ones((9, 9), np.uint8)
-            # mask_cleaned = cv.morphologyEx(image_bgr_tiling,
-            #                                cv.MORPH_OPEN, kernel)
+            if s.TILING_POST_PROCESS:
+                # Убираем шум
+                kernel = np.ones((9, 9), np.uint8)  # TODO: вынести в параметры ?
+                mask_cleaned = cv.morphologyEx(image_bgr_tiling,
+                                               cv.MORPH_OPEN, kernel)
 
-            # TODO Заполняем небольшие отверстия
-            # image_bgr_tiling = cv.morphologyEx(mask_cleaned,
-            #                                cv.MORPH_CLOSE, kernel)
-            # u.show_image_cv(u.resize_image_cv(image_bgr_tiling), title='masks_img_cleaned')
+                # Заполняем небольшие отверстия
+                image_bgr_tiling = cv.morphologyEx(mask_cleaned,
+                                               cv.MORPH_CLOSE, kernel)
+                # u.show_image_cv(u.resize_image_cv(image_bgr_tiling), title='masks_img_cleaned')
 
-            # Переходим к трехканальному изображению
+            # Переходим к трехканальному изображению TODO: это нужно только при пост-обработке?
             image_bgr_tiling = cv.cvtColor(image_bgr_tiling, cv.COLOR_GRAY2BGR)
 
             # Имя выходного файла тайла
