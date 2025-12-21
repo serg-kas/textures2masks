@@ -516,21 +516,30 @@ def process(operation_mode, source_files, out_path):
                     """
                     # 1. Подготовка маски-промпта
                     custom_mask = cv.cvtColor(curr_mask, cv.COLOR_BGR2GRAY)
-                    custom_mask = 255 - custom_mask
+                    custom_mask_inv = 255 - custom_mask
 
-                    low_res_mask = cv.resize(custom_mask.astype(np.uint8), (256, 256), interpolation=cv.INTER_NEAREST)
+                    low_res_mask = cv.resize(custom_mask_inv.astype(np.uint8), (256, 256), interpolation=cv.INTER_NEAREST)
                     # u.show_image_cv(low_res_mask, title='low_res_mask: {}'.format(low_res_mask.shape))
 
                     # 2. Нормализация: [0, 255] -> [0, 1]
                     mask_input = (low_res_mask > 128).astype(np.float32)
                     # u.show_image_cv(mask_input, title='mask_input: {}'.format(mask_input.shape))
 
-                    # 3. Генерация точечных промптов
+                    # 3-1. Генерация точечных промптов
                     point_coords, point_labels, custom_mask_parced = sam2_model.prepare_prompts_from_mask(custom_mask,
                                                                                                           num_points=1000,
                                                                                                           min_contour_area=10000,
-                                                                                                          max_contours=10)
+                                                                                                          max_contours=10,
+                                                                                                          foreground=False)
                     # u.show_image_cv(custom_mask_parced, title=str(custom_mask_parced.shape))
+
+                    # 3-2. Генерация точечных промптов на инвертированном изображении
+                    point_coords_inv, point_labels_inv, custom_mask_parced_inv = sam2_model.prepare_prompts_from_mask(custom_mask,
+                                                                                                                      num_points=1000,
+                                                                                                                      min_contour_area=10000,
+                                                                                                                      max_contours=10,
+                                                                                                                      foreground=False)
+                    # u.show_image_cv(custom_mask_parced_inv, title=str(custom_mask_parced_inv.shape))
 
                     # 4. Нормализация координат точек к размеру тайла
                     if len(point_coords) > 0:
@@ -557,6 +566,7 @@ def process(operation_mode, source_files, out_path):
                     """
                     # 1. Подготовка маски-промпта
                     custom_mask = cv.cvtColor(curr_mask, cv.COLOR_BGR2GRAY)
+                    custom_mask_inv = 255 - custom_mask
 
                     low_res_mask = cv.resize(custom_mask.astype(np.uint8), (256, 256), interpolation=cv.INTER_NEAREST)
                     # u.show_image_cv(low_res_mask, title='low_res_mask: {}'.format(low_res_mask.shape))
@@ -565,12 +575,21 @@ def process(operation_mode, source_files, out_path):
                     mask_input = (low_res_mask > 128).astype(np.float32)
                     # u.show_image_cv(mask_input, title='mask_input: {}'.format(mask_input.shape))
 
-                    # 3. Генерация точечных промптов
+                    # 3-1. Генерация точечных промптов
                     point_coords, point_labels, custom_mask_parced = sam2_model.prepare_prompts_from_mask(custom_mask,
                                                                                                           num_points=1000,
                                                                                                           min_contour_area=10000,
-                                                                                                          max_contours=10)
+                                                                                                          max_contours=10,
+                                                                                                          foreground=True)
                     # u.show_image_cv(custom_mask_parced, title=str(custom_mask_parced.shape))
+
+                    # 3-2. Генерация точечных промптов на инверсном изображении
+                    point_coords_inv, point_labels_inv, custom_mask_parced_inv = sam2_model.prepare_prompts_from_mask(custom_mask,
+                                                                                                                      num_points=1000,
+                                                                                                                      min_contour_area=10000,
+                                                                                                                      max_contours=10,
+                                                                                                                      foreground=True)
+                    # u.show_image_cv(custom_mask_parced_inv, title=str(custom_mask_parced_inv.shape))
 
                     # 4. Нормализация координат точек к размеру тайла
                     if len(point_coords) > 0:
