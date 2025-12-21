@@ -103,7 +103,6 @@ DEFAULT_MODE = OPERATION_MODE_LIST[0]  # режим работы по умолч
 # #############################################################
 #                       ОБЩИЕ ПАРАМЕТРЫ
 # #############################################################
-
 # Флаг вывода подробных сообщений в консоль (уровень logging.DEBUG)
 VERBOSE = get_value_from_env("VERBOSE", default_value=False)
 CONS_COLUMNS = 0  # ширина консоли (0 - попытаться определить автоматически)
@@ -122,21 +121,19 @@ ALLOWED_TYPES = ALLOWED_IMAGES + ['.pdf']
 # #############################################################
 #                    ПАРАМЕТРЫ МОДЕЛЕЙ
 # #############################################################
-
 # Параметры модели SAM2
 # SAM2_config_file = "sam2_hiera_l.yaml"
 # SAM2_checkpoint_file = "models/sam2_hiera_large.pt"
 SAM2_config_file = "sam2.1_hiera_l.yaml"
 SAM2_checkpoint_file = "models/sam2.1_hiera_large.pt"
 SAM2_force_cuda = get_value_from_env("SAM2_FORCE_CUDA", default_value=False)
+#
 SAM2_iou_threshold = 0.25
-
-# SAM2_score_threshold = 0.999
 SAM2_score_threshold = 0.95
 
 
 # #############################################################
-#                     ПАРАМЕТРЫ ОБРАБОТКИ
+#           ПАРАМЕТРЫ ОБРАБОТКИ базового алгоритма
 # #############################################################
 # Фильтр масок в разрешении 1024 по размеру
 AUTO_CALCULATE_AREAS = get_value_from_env("AUTO_CALCULATE_AREAS", default_value=True)
@@ -145,18 +142,27 @@ AREA_MIN = get_value_from_env("AREA_MIN", default_value=int(1024 * 1024 * 0.01))
 AREA_MAX = get_value_from_env("AREA_MAX", default_value=int(1024 * 1024 * 0.80))
 
 # Расщепление точки промта в заданном радиусе
-PROMPT_POINT_RADIUS = get_value_from_env("PROMPT_POINT_RADIUS", default_value=0)  # 30
+PROMPT_POINT_RADIUS = get_value_from_env("PROMPT_POINT_RADIUS", default_value=0)
 PROMPT_POINT_NUMBER = get_value_from_env("PROMPT_POINT_NUMBER", default_value=5)
 
+# Фильтровать точки промпта по цвету
 PROMPT_POINT_COLOR_FILTER = get_value_from_env("PROMPT_POINT_COLOR_FILTER", default_value=False)
 PROMPT_POINT_COLOR_THRESH = get_value_from_env("PROMPT_POINT_COLOR_THRESH", default_value=20)
 
+
+# #############################################################
+#            ПАРАМЕТРЫ ОБРАБОТКИ алгоритма ТАЙЛИНГА
+# #############################################################
 # Разбиение на тайлы
-TILING_SIZE = get_value_from_env("TILING_SIZE", default_value=1024)
+TILING_SIZE = 1024
 TILING_OVERLAP = get_value_from_env("TILING_OVERLAP", default_value=256)
 
-# Инверсный режим тайлинга
+# Инверсный режим тайлинга (обычный режим - предикт "плиток", инверсный режим - предикт швов)
 TILING_INVERSE_MODE = get_value_from_env("TILING_INVERSE_MODE", default_value=False)
+
+# Построцессинг (удаление шума и заливка мелких деталей)
+TILING_POST_PROCESS = get_value_from_env("TILING_POST_PROCESS", default_value=False)
+# TODO: параметры пост-процессинга
 
 
 # #############################################################
