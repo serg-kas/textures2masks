@@ -550,6 +550,11 @@ def process(operation_mode, source_files, out_path):
                     point_labels = np.concatenate([point_labels_dir, point_labels_inv])
                     # print(point_coords.shape, point_labels.shape)
 
+                    # point_coords = point_coords_dir
+                    # point_labels = point_labels_dir
+                    # point_coords = point_coords_inv
+                    # point_labels = point_labels_inv
+
                     # 4. Нормализация координат точек к размеру тайла
                     if len(point_coords) > 0:
                         height, width = curr_tile.shape[:2]
