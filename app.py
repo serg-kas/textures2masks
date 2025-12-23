@@ -693,7 +693,8 @@ def process(operation_mode, source_files, out_path):
                 # print("scores", scores, mask_idx)
 
                 # TODO: ВАР-2. Выбор маски по максимальному iou
-                iou_list = [w.calculate_mask_iou(custom_mask, pred_mask) for pred_mask in masks]
+                # iou_list = [w.calculate_mask_iou(custom_mask, pred_mask) for pred_mask in masks]
+                iou_list = [w.calculate_mask_iou(custom_mask_inv, pred_mask) for pred_mask in masks]
                 mask_idx = np.argmax(iou_list)
                 # print("iou_list", iou_list, mask_idx)
 
