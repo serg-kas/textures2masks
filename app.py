@@ -677,9 +677,6 @@ def process(operation_mode, source_files, out_path):
                 tool_model_sam2.counter += 1
                 # print(masks.shape, scores.shape)
 
-
-
-
                 # TODO: Фильтр масок по размеру
                 # masks, filtered_scores, valid_indices = u.filter_masks_by_area(masks,
                 #                                                                scores,
