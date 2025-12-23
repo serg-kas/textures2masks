@@ -425,6 +425,7 @@ def process(operation_mode, source_files, out_path):
             # result_mask1024 = result_dict['result_mask1024']                              # маска в разрешении 1024
             # result_mask1024_centers = result_dict['result_mask1024_centers']              # маска с визуализацией центров масс масок
             result_mask1024_original_size = result_dict['result_mask1024_original_size']  # маска в оригинальном разрешении полученная через разрешение 1024
+            center_of_mass_original_list = result_dict['center_of_mass_original_list']    # центры масс масок, пересчитанные в оригинальное разрешение
 
             # Имя выходного файла маски в оригинальном разрешении, полученной через ресайз
             out_img_base_name_mask1024 = img_file_base_name[:-4] + "_mask_1024.jpg"
@@ -528,32 +529,31 @@ def process(operation_mode, source_files, out_path):
                     # u.show_image_cv(mask_input, title='mask_input: {}'.format(mask_input.shape))
 
                     # 3-1. Генерация точечных промптов
-                    point_coords_dir, point_labels_dir, custom_mask_parced_dir = sam2_model.prepare_prompts_from_mask(custom_mask,
-                                                                                                                      num_points=1000,
-                                                                                                                      min_contour_area=10000,
-                                                                                                                      max_contours=10,
-                                                                                                                      contours_label=1,
-                                                                                                                      centers_label=0)
-                    # u.show_image_cv(custom_mask_parced_dir, title="dir " + str(custom_mask_parced_dir.shape))
+                    (point_coords_dir,
+                     point_labels_dir,
+                     custom_mask_parced_dir) = sam2_model.prepare_point_prompts_from_mask(custom_mask,
+                                                                                          num_points=1000,
+                                                                                          min_contour_area=10000,
+                                                                                          max_contour_number=10,
+                                                                                          label=1)
+                    u.show_image_cv(custom_mask_parced_dir, title="dir " + str(custom_mask_parced_dir.shape))
 
                     # 3-2. Генерация точечных промптов на инвертированном изображении
-                    point_coords_inv, point_labels_inv, custom_mask_parced_inv = sam2_model.prepare_prompts_from_mask(custom_mask_inv,
-                                                                                                                      num_points=1000,
-                                                                                                                      min_contour_area=10000,
-                                                                                                                      max_contours=10,
-                                                                                                                      contours_label=0,
-                                                                                                                      centers_label=None)
-                    # u.show_image_cv(custom_mask_parced_inv, title="inv " + str(custom_mask_parced_inv.shape))
+                    (point_coords_inv,
+                     point_labels_inv,
+                     custom_mask_parced_inv) = sam2_model.prepare_point_prompts_from_mask(custom_mask_inv,
+                                                                                          num_points=1000,
+                                                                                          min_contour_area=10000,
+                                                                                          max_contour_number=10,
+                                                                                          label=0)
+                    u.show_image_cv(custom_mask_parced_inv, title="inv " + str(custom_mask_parced_inv.shape))
 
                     # Объединяем промпты в один
                     point_coords = np.concatenate([point_coords_dir, point_coords_inv])
                     point_labels = np.concatenate([point_labels_dir, point_labels_inv])
                     # print(point_coords.shape, point_labels.shape)
 
-                    # point_coords = point_coords_dir
-                    # point_labels = point_labels_dir
-                    # point_coords = point_coords_inv
-                    # point_labels = point_labels_inv
+                    # TODO: добавить координаты центроидов
 
                     # 4. Нормализация координат точек к размеру тайла
                     if len(point_coords) > 0:
@@ -592,27 +592,33 @@ def process(operation_mode, source_files, out_path):
                     # u.show_image_cv(mask_input, title='mask_input: {}'.format(mask_input.shape))
 
                     # 3-1. Генерация точечных промптов
-                    point_coords_dir, point_labels_dir, custom_mask_parced_dir = sam2_model.prepare_prompts_from_mask(custom_mask,
-                                                                                                          num_points=1000,
-                                                                                                          min_contour_area=10000,
-                                                                                                          max_contours=10,
-                                                                                                          contours_label=0,
-                                                                                                          centers_label=1)
+                    (point_coords_dir,
+                     point_labels_dir,
+                     custom_mask_parced_dir) = sam2_model.prepare_point_prompts_from_mask(custom_mask,
+                                                                                          num_points=1000,
+                                                                                          min_contour_area=10000,
+                                                                                          max_contour_number=10,
+                                                                                          label=0)
                     # u.show_image_cv(custom_mask_parced_dir, title="dir " + str(custom_mask_parced_dir.shape))
 
                     # 3-2. Генерация точечных промптов на инверсном изображении
-                    point_coords_inv, point_labels_inv, custom_mask_parced_inv = sam2_model.prepare_prompts_from_mask(custom_mask_inv,
-                                                                                                                      num_points=1000,
-                                                                                                                      min_contour_area=10000,
-                                                                                                                      max_contours=10,
-                                                                                                                      contours_label=1,
-                                                                                                                      centers_label=None)
+                    (point_coords_inv,
+                     point_labels_inv,
+                     custom_mask_parced_inv) = sam2_model.prepare_point_prompts_from_mask(custom_mask_inv,
+                                                                                          num_points=1000,
+                                                                                          min_contour_area=10000,
+                                                                                          max_contour_number=10,
+                                                                                          label=1)
                     # u.show_image_cv(custom_mask_parced_inv, title="inv " + str(custom_mask_parced_inv.shape))
 
                     # Объединяем промпты в один
                     point_coords = np.concatenate([point_coords_dir, point_coords_inv])
                     point_labels = np.concatenate([point_labels_dir, point_labels_inv])
                     # print(point_coords.shape, point_labels.shape)
+
+
+                    # TODO: добавить координаты центроидов
+
 
                     # 4. Нормализация координат точек к размеру тайла
                     if len(point_coords) > 0:

@@ -105,90 +105,19 @@ def get_predictor(model, verbose=False):
     return predictor
 
 
-# def prepare_prompts_from_mask(mask,
-#                               num_points=20,
-#                               min_contour_area=1000,
-#                               max_contours=10,
-#                               foreground=True):
-#     """
-#     Генерация точечных промптов из маски
-#     """
-#     # Находим контуры в маске
-#     contours, _ = cv.findContours(mask, cv.RETR_EXTERNAL, cv.CHAIN_APPROX_SIMPLE)
-#
-#     # Фильтруем контуры по площади и берем только самые крупные
-#     filtered_contours = []
-#
-#     # Вычисляем площади всех контуров
-#     contour_areas = [(i, cv.contourArea(contour)) for i, contour in enumerate(contours)]
-#
-#     # Сортируем контуры по площади (по убыванию)
-#     contour_areas.sort(key=lambda x: x[1], reverse=True)
-#
-#     # Отбираем контуры, удовлетворяющие критериям
-#     for i, area in contour_areas:
-#         if area >= min_contour_area and len(filtered_contours) < max_contours:
-#             filtered_contours.append(contours[i])
-#
-#     print(f"    Найдено контуров: {len(contours)}, отфильтровано: {len(filtered_contours)}")
-#     print(f"    Площади контуров (первые 5): {[f'{area:.0f}' for _, area in contour_areas][:5]}")
-#
-#     # Создаем копию маски для визуализации
-#     if len(mask.shape) == 2:  # Если маска одноканальная
-#         mask_parsed = cv.cvtColor(mask, cv.COLOR_GRAY2BGR)
-#     else:
-#         mask_parsed = mask.copy()
-#
-#     point_coords = []
-#     point_labels = []
-#
-#     # for contour in contours:
-#     for contour in filtered_contours:
-#         # Добавляем точки вдоль контура
-#         for i in range(0, len(contour), max(1, len(contour) // num_points)):
-#             point = contour[i][0]
-#             point_coords.append([point[0], point[1]])
-#             #
-#             if foreground:
-#                 point_labels.append(1)
-#                 cv.circle(mask_parsed, (point[0], point[1]), 3, s.red, -1)
-#             else:
-#                 point_labels.append(0)
-#                 cv.circle(mask_parsed, (point[0], point[1]), 3, s.blue, -1)
-#
-#         # Добавляем точки внутри области (центроиды)
-#         if len(contour) > 0:
-#             M = cv.moments(contour)
-#             if M["m00"] != 0:
-#                 cx = int(M["m10"] / M["m00"])
-#                 cy = int(M["m01"] / M["m00"])
-#                 point_coords.append([cx, cy])
-#                 #
-#                 if foreground:
-#                     point_labels.append(1)
-#                     cv.circle(mask_parsed, (cx, cy), 5, s.red, -1)
-#                 else:
-#                     point_labels.append(0)
-#                     cv.circle(mask_parsed, (cx, cy), 5, s.blue, -1)
-#
-#     return np.array(point_coords), np.array(point_labels), mask_parsed
-
-
-def prepare_prompts_from_mask(mask,
-                              num_points=20,
-                              min_contour_area=1000,
-                              max_contours=10,
-                              contours_label=None,
-                              centers_label=None):
+def prepare_point_prompts_from_mask(mask,
+                                    num_points=20,
+                                    min_contour_area=1000,
+                                    max_contour_number=10,
+                                    label=1):
     """
-    Генерация точечных промптов из маски
+    Генерация точечных промптов из контуров маски
 
     :param mask: маска для обработки
     :param num_points: сколько точек брать вдоль контура
     :param min_contour_area: брать контуры размера не менее данного
-    :param max_contours: обрабатывать контуров не более заданного количества
-    :param contours_label: метки, присваиваемые точкам вдоль контуров
-    :param centers_label: метки точек, присваиваемые центроидам
+    :param max_contour_number: обрабатывать контуров не более заданного количества
+    :param label: метки, присваиваемые точкам вдоль контуров
     :return: массив точек, массив меток, визуализация подготовленных промптов
     """
     # Находим контуры в маске
@@ -205,7 +134,7 @@ def prepare_prompts_from_mask(mask,
 
     # Отбираем контуры, удовлетворяющие критериям
     for i, area in contour_areas:
-        if area >= min_contour_area and len(filtered_contours) < max_contours:
+        if area >= min_contour_area and len(filtered_contours) < max_contour_number:
             filtered_contours.append(contours[i])
 
     print(f"    Найдено контуров: {len(contours)}, отфильтровано: {len(filtered_contours)}")
@@ -225,33 +154,31 @@ def prepare_prompts_from_mask(mask,
     for contour in filtered_contours:
 
         # Добавляем точки вдоль контура
-        if contours_label is not None:
-            for i in range(0, len(contour), max(1, len(contour) // num_points)):
-                point = contour[i][0]
-                point_coords.append([point[0], point[1]])
-                #
-                if contours_label==1:
-                    point_labels.append(1)
-                    cv.circle(mask_parsed, (point[0], point[1]), 3, s.red, -1)
-                elif contours_label==0:
-                    point_labels.append(0)
-                    cv.circle(mask_parsed, (point[0], point[1]), 3, s.blue, -1)
+        for i in range(0, len(contour), max(1, len(contour) // num_points)):
+            point = contour[i][0]
+            point_coords.append([point[0], point[1]])
+            #
+            if label==1:
+                point_labels.append(1)
+                cv.circle(mask_parsed, (point[0], point[1]), 3, s.red, -1)
+            elif label==0:
+                point_labels.append(0)
+                cv.circle(mask_parsed, (point[0], point[1]), 3, s.blue, -1)
 
         # Добавляем точки - центроиды
-        if centers_label is not None:
-            if len(contour) > 0:
-                M = cv.moments(contour)
-                if M["m00"] != 0:
-                    cx = int(M["m10"] / M["m00"])
-                    cy = int(M["m01"] / M["m00"])
-                    point_coords.append([cx, cy])
-                    #
-                    if centers_label==1:
-                        point_labels.append(1)
-                        cv.circle(mask_parsed, (cx, cy), 5, s.red, -1)
-                    elif centers_label==0:
-                        point_labels.append(0)
-                        cv.circle(mask_parsed, (cx, cy), 5, s.blue, -1)
+        # if len(contour) > 0:
+        #     M = cv.moments(contour)
+        #     if M["m00"] != 0:
+        #         cx = int(M["m10"] / M["m00"])
+        #         cy = int(M["m01"] / M["m00"])
+        #         point_coords.append([cx, cy])
+        #         #
+        #         if centers_label==1:
+        #             point_labels.append(1)
+        #             cv.circle(mask_parsed, (cx, cy), 5, s.red, -1)
+        #         elif centers_label==0:
+        #             point_labels.append(0)
+        #             cv.circle(mask_parsed, (cx, cy), 5, s.blue, -1)
 
     return np.array(point_coords), np.array(point_labels), mask_parsed
 
