@@ -180,7 +180,8 @@ def prepare_point_prompts_from_mask(mask,
         #             point_labels.append(0)
         #             cv.circle(mask_parsed, (cx, cy), 5, s.blue, -1)
 
-    return np.array(point_coords), np.array(point_labels), mask_parsed
+    # return np.array(point_coords), np.array(point_labels), mask_parsed
+    return point_coords, point_labels, mask_parsed
 
 
 # #########################################################

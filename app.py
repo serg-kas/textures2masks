@@ -511,6 +511,9 @@ def process(operation_mode, source_files, out_path):
                 curr_tile = tiles_list[idx]
                 # u.show_image_cv(u.resize_image_cv(np.concatenate((curr_tile, curr_mask), axis=1), img_size=1024), title='tile | mask')
 
+                curr_tile_coords = mask_coords_list[idx]
+                # print(curr_tile_coords)
+
                 if s.TILING_INVERSE_MODE:
                     """
                     Предикт швов. Элементы текстуры (плитки) трактуются как фон.
@@ -536,7 +539,7 @@ def process(operation_mode, source_files, out_path):
                                                                                           min_contour_area=10000,
                                                                                           max_contour_number=10,
                                                                                           label=1)
-                    u.show_image_cv(custom_mask_parced_dir, title="dir " + str(custom_mask_parced_dir.shape))
+                    # u.show_image_cv(custom_mask_parced_dir, title="dir " + str(custom_mask_parced_dir.shape))
 
                     # 3-2. Генерация точечных промптов на инвертированном изображении
                     (point_coords_inv,
@@ -546,14 +549,30 @@ def process(operation_mode, source_files, out_path):
                                                                                           min_contour_area=10000,
                                                                                           max_contour_number=10,
                                                                                           label=0)
-                    u.show_image_cv(custom_mask_parced_inv, title="inv " + str(custom_mask_parced_inv.shape))
+                    # u.show_image_cv(custom_mask_parced_inv, title="inv " + str(custom_mask_parced_inv.shape))
 
                     # Объединяем промпты в один
-                    point_coords = np.concatenate([point_coords_dir, point_coords_inv])
-                    point_labels = np.concatenate([point_labels_dir, point_labels_inv])
-                    # print(point_coords.shape, point_labels.shape)
+                    point_coords_list = point_coords_dir + point_coords_inv
+                    point_labels_list = point_labels_dir + point_labels_inv
+                    point_coords = np.array(point_coords_list)
+                    point_labels = np.array(point_labels_list)
 
-                    # TODO: добавить координаты центроидов
+                    # Добавить координаты центроидов
+                    Y1, X1, Y2, X2 = curr_tile_coords
+                    for center in center_of_mass_original_list:
+                        Xc, Yc = center
+                        if (X1 <= Xc <= X2) and (Y1 <= Yc <= Y2):
+                            # print("Xc, Yc", Xc, Yc)
+                            point_coords_list.append([Xc - X1, Yc - Y1])
+                            point_labels_list.append(0)  # фон
+                            # cv.circle(custom_mask_parced_dir, (Xc - X1, Yc - Y1), 7, s.red, -1)
+                            # cv.circle(custom_mask_parced_inv, (Xc - X1, Yc - Y1), 7, s.red, -1)
+                    # u.show_image_cv(custom_mask_parced_dir, title="dir " + str(custom_mask_parced_dir.shape))
+                    # u.show_image_cv(custom_mask_parced_inv, title="inv " + str(custom_mask_parced_inv.shape))
+
+                    # Переходим в numpy
+                    point_coords = np.array(point_coords_list)
+                    point_labels = np.array(point_labels_list)
 
                     # 4. Нормализация координат точек к размеру тайла
                     if len(point_coords) > 0:
@@ -568,8 +587,10 @@ def process(operation_mode, source_files, out_path):
 
                     # 6. Предсказание с комбинацией промптов
                     masks, scores, _ = predictor.predict(
-                        point_coords=point_coords_normalized,
-                        point_labels=point_labels,
+                        # point_coords=point_coords_normalized,
+                        point_coords=None,
+                        # point_labels=point_labels,
+                        point_labels=None,
                         box=None,
                         mask_input=mask_input[None, :, :],
                         multimask_output=True
@@ -612,13 +633,25 @@ def process(operation_mode, source_files, out_path):
                     # u.show_image_cv(custom_mask_parced_inv, title="inv " + str(custom_mask_parced_inv.shape))
 
                     # Объединяем промпты в один
-                    point_coords = np.concatenate([point_coords_dir, point_coords_inv])
-                    point_labels = np.concatenate([point_labels_dir, point_labels_inv])
-                    # print(point_coords.shape, point_labels.shape)
+                    point_coords_list = point_coords_dir + point_coords_inv
+                    point_labels_list = point_labels_dir + point_labels_inv
 
+                    # Добавляем координаты центроидов
+                    Y1, X1, Y2, X2 = curr_tile_coords
+                    for center in center_of_mass_original_list:
+                        Xc, Yc = center
+                        if (X1 <= Xc <= X2) and (Y1 <= Yc <= Y2):
+                            # print("Xc, Yc", Xc, Yc)
+                            point_coords_list.append([Xc - X1, Yc - Y1])
+                            point_labels_list.append(1)  # передний план
+                            # cv.circle(custom_mask_parced_dir, (Xc - X1, Yc - Y1), 7, s.red, -1)
+                            # cv.circle(custom_mask_parced_inv, (Xc - X1, Yc - Y1), 7, s.red, -1)
+                    # u.show_image_cv(custom_mask_parced_dir, title="dir " + str(custom_mask_parced_dir.shape))
+                    # u.show_image_cv(custom_mask_parced_inv, title="inv " + str(custom_mask_parced_inv.shape))
 
-                    # TODO: добавить координаты центроидов
-
+                    # Переходим в numpy
+                    point_coords = np.array(point_coords_list)
+                    point_labels = np.array(point_labels_list)
 
                     # 4. Нормализация координат точек к размеру тайла
                     if len(point_coords) > 0:
@@ -634,13 +667,18 @@ def process(operation_mode, source_files, out_path):
                     # 6. Предсказание с комбинацией промптов
                     masks, scores, _ = predictor.predict(
                         point_coords=point_coords_normalized,
+                        # point_coords=None,
                         point_labels=point_labels,
+                        # point_labels=None,
                         box=None,
                         mask_input=mask_input[None, :, :],
                         multimask_output=True
                     )
                 tool_model_sam2.counter += 1
                 # print(masks.shape, scores.shape)
+
+
+
 
                 # TODO: Фильтр масок по размеру
                 # masks, filtered_scores, valid_indices = u.filter_masks_by_area(masks,
@@ -707,6 +745,8 @@ def process(operation_mode, source_files, out_path):
             out_new_file = os.path.join(out_path, out_new_base_name)
             if cv.imwrite(str(out_new_file), image_bgr_tiling):
                 print("  Сохранили выходной файл: {}".format(out_new_file))
+
+            # TODO: Отрисовать точки промпта на маске оригинального разрешения и записать файл
 
         time_1 = time.perf_counter()
         print("Обработали изображений: {}, время {:.2f} с.".format(len(img_file_list),
