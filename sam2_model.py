@@ -225,31 +225,33 @@ def prepare_prompts_from_mask(mask,
     for contour in filtered_contours:
 
         # Добавляем точки вдоль контура
-        for i in range(0, len(contour), max(1, len(contour) // num_points)):
-            point = contour[i][0]
-            point_coords.append([point[0], point[1]])
-            #
-            if contours_label==1:
-                point_labels.append(1)
-                cv.circle(mask_parsed, (point[0], point[1]), 3, s.red, -1)
-            elif contours_label==0:
-                point_labels.append(0)
-                cv.circle(mask_parsed, (point[0], point[1]), 3, s.blue, -1)
+        if contours_label is not None:
+            for i in range(0, len(contour), max(1, len(contour) // num_points)):
+                point = contour[i][0]
+                point_coords.append([point[0], point[1]])
+                #
+                if contours_label==1:
+                    point_labels.append(1)
+                    cv.circle(mask_parsed, (point[0], point[1]), 3, s.red, -1)
+                elif contours_label==0:
+                    point_labels.append(0)
+                    cv.circle(mask_parsed, (point[0], point[1]), 3, s.blue, -1)
 
         # Добавляем точки - центроиды
-        if len(contour) > 0:
-            M = cv.moments(contour)
-            if M["m00"] != 0:
-                cx = int(M["m10"] / M["m00"])
-                cy = int(M["m01"] / M["m00"])
-                point_coords.append([cx, cy])
-                #
-                if centers_label==1:
-                    point_labels.append(1)
-                    cv.circle(mask_parsed, (cx, cy), 5, s.red, -1)
-                elif centers_label==0:
-                    point_labels.append(0)
-                    cv.circle(mask_parsed, (cx, cy), 5, s.blue, -1)
+        if centers_label is not None:
+            if len(contour) > 0:
+                M = cv.moments(contour)
+                if M["m00"] != 0:
+                    cx = int(M["m10"] / M["m00"])
+                    cy = int(M["m01"] / M["m00"])
+                    point_coords.append([cx, cy])
+                    #
+                    if centers_label==1:
+                        point_labels.append(1)
+                        cv.circle(mask_parsed, (cx, cy), 5, s.red, -1)
+                    elif centers_label==0:
+                        point_labels.append(0)
+                        cv.circle(mask_parsed, (cx, cy), 5, s.blue, -1)
 
     return np.array(point_coords), np.array(point_labels), mask_parsed
 
