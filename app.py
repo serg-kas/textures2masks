@@ -513,11 +513,13 @@ def process(operation_mode, source_files, out_path):
                 if s.TILING_INVERSE_MODE:
                     """
                     Предикт швов. Элементы текстуры (плитки) трактуются как фон.
+                    
+                    Промпт-маска - белые швы на фоне черных элементов (плиток).
                     """
-                    # 1. Подготовка маски-промпта
                     custom_mask = cv.cvtColor(curr_mask, cv.COLOR_BGR2GRAY)
                     custom_mask_inv = 255 - custom_mask
 
+                    # 1. Подготовка маски-промпта
                     low_res_mask = cv.resize(custom_mask_inv.astype(np.uint8), (256, 256), interpolation=cv.INTER_NEAREST)
                     # u.show_image_cv(low_res_mask, title='low_res_mask: {}'.format(low_res_mask.shape))
 
@@ -530,7 +532,8 @@ def process(operation_mode, source_files, out_path):
                                                                                                           num_points=1000,
                                                                                                           min_contour_area=10000,
                                                                                                           max_contours=10,
-                                                                                                          foreground=False)
+                                                                                                          contours_label=None,
+                                                                                                          centers_label=None)
                     # u.show_image_cv(custom_mask_parced, title=str(custom_mask_parced.shape))
 
                     # 3-2. Генерация точечных промптов на инвертированном изображении
@@ -538,7 +541,8 @@ def process(operation_mode, source_files, out_path):
                                                                                                                       num_points=1000,
                                                                                                                       min_contour_area=10000,
                                                                                                                       max_contours=10,
-                                                                                                                      foreground=False)
+                                                                                                                      contours_label=None,
+                                                                                                                      centers_label=None)
                     # u.show_image_cv(custom_mask_parced_inv, title=str(custom_mask_parced_inv.shape))
 
                     # 4. Нормализация координат точек к размеру тайла
@@ -563,11 +567,13 @@ def process(operation_mode, source_files, out_path):
                 else:
                     """
                     Предикт элементов текстуры (плиток). Швы трактуются как фон.
+                    
+                    Промпт-маска - белые элементы (плитки) на черном фоне.
                     """
-                    # 1. Подготовка маски-промпта
                     custom_mask = cv.cvtColor(curr_mask, cv.COLOR_BGR2GRAY)
                     custom_mask_inv = 255 - custom_mask
 
+                    # 1. Подготовка маски-промпта
                     low_res_mask = cv.resize(custom_mask.astype(np.uint8), (256, 256), interpolation=cv.INTER_NEAREST)
                     # u.show_image_cv(low_res_mask, title='low_res_mask: {}'.format(low_res_mask.shape))
 
@@ -580,7 +586,8 @@ def process(operation_mode, source_files, out_path):
                                                                                                           num_points=1000,
                                                                                                           min_contour_area=10000,
                                                                                                           max_contours=10,
-                                                                                                          foreground=True)
+                                                                                                          contours_label=None,
+                                                                                                          centers_label=None)
                     # u.show_image_cv(custom_mask_parced, title=str(custom_mask_parced.shape))
 
                     # 3-2. Генерация точечных промптов на инверсном изображении
@@ -588,7 +595,8 @@ def process(operation_mode, source_files, out_path):
                                                                                                                       num_points=1000,
                                                                                                                       min_contour_area=10000,
                                                                                                                       max_contours=10,
-                                                                                                                      foreground=True)
+                                                                                                                      contours_label=None,
+                                                                                                                      centers_label=None)
                     # u.show_image_cv(custom_mask_parced_inv, title=str(custom_mask_parced_inv.shape))
 
                     # 4. Нормализация координат точек к размеру тайла
