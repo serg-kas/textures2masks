@@ -548,6 +548,7 @@ def process(operation_mode, source_files, out_path):
                                                                                           max_contour_number=10,
                                                                                           label=1)
                     # u.show_image_cv(custom_mask_parced_dir, title="dir " + str(custom_mask_parced_dir.shape))
+                    point_coords_dir, point_labels_dir = [], []
 
                     # 3-2. Генерация точечных промптов на инвертированном изображении
                     """
@@ -562,6 +563,7 @@ def process(operation_mode, source_files, out_path):
                                                                                           max_contour_number=10,
                                                                                           label=0)
                     # u.show_image_cv(custom_mask_parced_inv, title="inv " + str(custom_mask_parced_inv.shape))
+                    # point_coords_inv, point_labels_inv = [], []
 
                     # Добавляем координаты центроидов
                     """
@@ -576,8 +578,9 @@ def process(operation_mode, source_files, out_path):
                             # print("Xc, Yc", Xc, Yc)
                             center_coord_list.append([Xc - X1, Yc - Y1])
                             center_labels_list.append(0)  # фон
+                    # center_coord_list, center_labels_list = [], []
 
-                    # TODO: Объединяем промпты в один
+                    # Объединяем промпты в один
                     point_coords_list = point_coords_dir + point_coords_inv + center_coord_list
                     point_labels_list = point_labels_dir + point_labels_inv + center_labels_list
 
@@ -647,6 +650,7 @@ def process(operation_mode, source_files, out_path):
                                                                                           max_contour_number=10,
                                                                                           label=0)
                     # u.show_image_cv(custom_mask_parced_dir, title="dir " + str(custom_mask_parced_dir.shape))
+                    # point_coords_dir, point_labels_dir = [], []
 
                     # 3-2. Генерация точечных промптов на инверсном изображении
                     """
@@ -661,6 +665,7 @@ def process(operation_mode, source_files, out_path):
                                                                                           max_contour_number=10,
                                                                                           label=1)
                     # u.show_image_cv(custom_mask_parced_inv, title="inv " + str(custom_mask_parced_inv.shape))
+                    # point_coords_inv, point_labels_inv = [], []
 
                     # Добавляем координаты центроидов
                     """
@@ -675,8 +680,9 @@ def process(operation_mode, source_files, out_path):
                             # print("Xc, Yc", Xc, Yc)
                             center_coord_list.append([Xc - X1, Yc - Y1])
                             center_labels_list.append(1)  # передний план
+                    # center_coord_list, center_labels_list = [], []
 
-                    # TODO: Объединяем промпты в один
+                    # Объединяем промпты в один
                     point_coords_list = point_coords_dir + point_coords_inv + center_coord_list
                     point_labels_list = point_labels_dir + point_labels_inv + center_labels_list
 
