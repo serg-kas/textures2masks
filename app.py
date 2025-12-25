@@ -735,11 +735,11 @@ def process(operation_mode, source_files, out_path):
                 #                                                                         min_area_ratio=0.1,
                 #                                                                         max_area_ratio=0.8)
 
-                # TODO: ВАР-1. Выбор маски по максимальному score
+                # TODO: Выбор маски по максимальному score
                 # mask_idx = np.argmax(scores)
                 # print("scores", scores, mask_idx)
 
-                # TODO: ВАР-2. Выбор маски по максимальному iou
+                # Выбор маски по максимальному iou
                 if s.TILING_INVERSE_MODE:
                     iou_list = [w.calculate_mask_iou(custom_mask_inv, pred_mask) for pred_mask in masks]
                 else:
