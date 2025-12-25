@@ -548,7 +548,7 @@ def process(operation_mode, source_files, out_path):
                                                                                           max_contour_number=10,
                                                                                           label=1)
                     # u.show_image_cv(custom_mask_parced_dir, title="dir " + str(custom_mask_parced_dir.shape))
-                    point_coords_dir, point_labels_dir = [], []
+                    # point_coords_dir, point_labels_dir = [], []
 
                     # 3-2. Генерация точечных промптов на инвертированном изображении
                     """
@@ -740,8 +740,10 @@ def process(operation_mode, source_files, out_path):
                 # print("scores", scores, mask_idx)
 
                 # TODO: ВАР-2. Выбор маски по максимальному iou
-                iou_list = [w.calculate_mask_iou(custom_mask, pred_mask) for pred_mask in masks]
-                # iou_list = [w.calculate_mask_iou(custom_mask_inv, pred_mask) for pred_mask in masks]
+                if s.TILING_INVERSE_MODE:
+                    iou_list = [w.calculate_mask_iou(custom_mask_inv, pred_mask) for pred_mask in masks]
+                else:
+                    iou_list = [w.calculate_mask_iou(custom_mask, pred_mask) for pred_mask in masks]
                 mask_idx = np.argmax(iou_list)
                 # print("iou_list", iou_list, mask_idx)
 
