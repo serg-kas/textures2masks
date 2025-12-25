@@ -459,7 +459,7 @@ def process(operation_mode, source_files, out_path):
             #     if cv.imwrite(str(out_tile_file), tile):
             #         print("  Сохранили тайл: {}".format(out_tile_file))
 
-            # TODO: Предобработка каждого тайла
+            # TODO: Возможна предобработка каждого тайла
             # processed_tiles = [cv.cvtColor(tile, cv.COLOR_BGR2RGB) for tile in tiles_list]
 
             # # Сборка выходного изображения
@@ -504,7 +504,10 @@ def process(operation_mode, source_files, out_path):
             else:
                 print("Сегментация тайлов в оригинальном разрешении без инверсии (предикт плиток)")
 
+            # Список полученных масок каждого тайла
             processed_mask_list = []
+            # Общие списки точечных промптов и меток
+            prompt_points_full_list, prompt_labels_full_list = [], []
             for idx, curr_mask in enumerate(mask_tiles_list):
                 print("  Тайл {}/{}".format(idx+1, len(mask_tiles_list)))
                 #
@@ -517,13 +520,14 @@ def process(operation_mode, source_files, out_path):
                 if s.TILING_INVERSE_MODE:
                     """
                     Предикт швов. Элементы текстуры (плитки) трактуются как фон.
-                    
-                    Промпт-маска - белые швы на фоне черных элементов (плиток).
                     """
                     custom_mask = cv.cvtColor(curr_mask, cv.COLOR_BGR2GRAY)
                     custom_mask_inv = 255 - custom_mask
 
                     # 1. Подготовка маски-промпта
+                    """
+                    Промпт-маска - белые швы на фоне черных элементов (плиток).
+                    """
                     low_res_mask = cv.resize(custom_mask_inv.astype(np.uint8), (256, 256), interpolation=cv.INTER_NEAREST)
                     # u.show_image_cv(low_res_mask, title='low_res_mask: {}'.format(low_res_mask.shape))
 
@@ -532,6 +536,10 @@ def process(operation_mode, source_files, out_path):
                     # u.show_image_cv(mask_input, title='mask_input: {}'.format(mask_input.shape))
 
                     # 3-1. Генерация точечных промптов
+                    """
+                    Обработка контурами на прямом изображении дает точки на швах.
+                    Точки на швах при предикте швов маркируются как передний план.
+                    """
                     (point_coords_dir,
                      point_labels_dir,
                      custom_mask_parced_dir) = sam2_model.prepare_point_prompts_from_mask(custom_mask,
@@ -542,6 +550,10 @@ def process(operation_mode, source_files, out_path):
                     # u.show_image_cv(custom_mask_parced_dir, title="dir " + str(custom_mask_parced_dir.shape))
 
                     # 3-2. Генерация точечных промптов на инвертированном изображении
+                    """
+                    Обработка контурами на инвертированном изображении дает точки на элементах.
+                    Точки на элементах при предикте швов маркируются как фон.
+                    """
                     (point_coords_inv,
                      point_labels_inv,
                      custom_mask_parced_inv) = sam2_model.prepare_point_prompts_from_mask(custom_mask_inv,
@@ -550,104 +562,24 @@ def process(operation_mode, source_files, out_path):
                                                                                           max_contour_number=10,
                                                                                           label=0)
                     # u.show_image_cv(custom_mask_parced_inv, title="inv " + str(custom_mask_parced_inv.shape))
-
-                    # Объединяем промпты в один
-                    point_coords_list = point_coords_dir + point_coords_inv
-                    point_labels_list = point_labels_dir + point_labels_inv
-                    point_coords = np.array(point_coords_list)
-                    point_labels = np.array(point_labels_list)
-
-                    # Добавить координаты центроидов
-                    Y1, X1, Y2, X2 = curr_tile_coords
-                    for center in center_of_mass_original_list:
-                        Xc, Yc = center
-                        if (X1 <= Xc <= X2) and (Y1 <= Yc <= Y2):
-                            # print("Xc, Yc", Xc, Yc)
-                            point_coords_list.append([Xc - X1, Yc - Y1])
-                            point_labels_list.append(0)  # фон
-                            # cv.circle(custom_mask_parced_dir, (Xc - X1, Yc - Y1), 7, s.red, -1)
-                            # cv.circle(custom_mask_parced_inv, (Xc - X1, Yc - Y1), 7, s.red, -1)
-                    # u.show_image_cv(custom_mask_parced_dir, title="dir " + str(custom_mask_parced_dir.shape))
-                    # u.show_image_cv(custom_mask_parced_inv, title="inv " + str(custom_mask_parced_inv.shape))
-
-                    # Переходим в numpy
-                    point_coords = np.array(point_coords_list)
-                    point_labels = np.array(point_labels_list)
-
-                    # 4. Нормализация координат точек к размеру тайла
-                    if len(point_coords) > 0:
-                        height, width = curr_tile.shape[:2]
-                        point_coords_normalized = point_coords / np.array([width, height])
-                    else:
-                        point_coords_normalized = None
-                        point_labels = None
-
-                    # 5. Установка изображения
-                    predictor.set_image(curr_tile)
-
-                    # 6. Предсказание с комбинацией промптов
-                    masks, scores, _ = predictor.predict(
-                        # point_coords=point_coords_normalized,
-                        point_coords=None,
-                        # point_labels=point_labels,
-                        point_labels=None,
-                        box=None,
-                        mask_input=mask_input[None, :, :],
-                        multimask_output=True
-                    )
-                else:
-                    """
-                    Предикт элементов текстуры (плиток). Швы трактуются как фон.
-                    
-                    Промпт-маска - белые элементы (плитки) на черном фоне.
-                    """
-                    custom_mask = cv.cvtColor(curr_mask, cv.COLOR_BGR2GRAY)
-                    custom_mask_inv = 255 - custom_mask
-
-                    # 1. Подготовка маски-промпта
-                    low_res_mask = cv.resize(custom_mask.astype(np.uint8), (256, 256), interpolation=cv.INTER_NEAREST)
-                    # u.show_image_cv(low_res_mask, title='low_res_mask: {}'.format(low_res_mask.shape))
-
-                    # 2. Нормализация: [0, 255] -> [0, 1]
-                    mask_input = (low_res_mask > 128).astype(np.float32)
-                    # u.show_image_cv(mask_input, title='mask_input: {}'.format(mask_input.shape))
-
-                    # 3-1. Генерация точечных промптов
-                    (point_coords_dir,
-                     point_labels_dir,
-                     custom_mask_parced_dir) = sam2_model.prepare_point_prompts_from_mask(custom_mask,
-                                                                                          num_points=1000,
-                                                                                          min_contour_area=10000,
-                                                                                          max_contour_number=10,
-                                                                                          label=0)
-                    # u.show_image_cv(custom_mask_parced_dir, title="dir " + str(custom_mask_parced_dir.shape))
-
-                    # 3-2. Генерация точечных промптов на инверсном изображении
-                    (point_coords_inv,
-                     point_labels_inv,
-                     custom_mask_parced_inv) = sam2_model.prepare_point_prompts_from_mask(custom_mask_inv,
-                                                                                          num_points=1000,
-                                                                                          min_contour_area=10000,
-                                                                                          max_contour_number=10,
-                                                                                          label=1)
-                    # u.show_image_cv(custom_mask_parced_inv, title="inv " + str(custom_mask_parced_inv.shape))
-
-                    # Объединяем промпты в один
-                    point_coords_list = point_coords_dir + point_coords_inv
-                    point_labels_list = point_labels_dir + point_labels_inv
 
                     # Добавляем координаты центроидов
+                    """
+                    Центроиды элементов при предикте швов трактуются как фон
+                    """
+                    center_coord_list = []
+                    center_labels_list = []
                     Y1, X1, Y2, X2 = curr_tile_coords
                     for center in center_of_mass_original_list:
                         Xc, Yc = center
                         if (X1 <= Xc <= X2) and (Y1 <= Yc <= Y2):
                             # print("Xc, Yc", Xc, Yc)
-                            point_coords_list.append([Xc - X1, Yc - Y1])
-                            point_labels_list.append(1)  # передний план
-                            # cv.circle(custom_mask_parced_dir, (Xc - X1, Yc - Y1), 7, s.red, -1)
-                            # cv.circle(custom_mask_parced_inv, (Xc - X1, Yc - Y1), 7, s.red, -1)
-                    # u.show_image_cv(custom_mask_parced_dir, title="dir " + str(custom_mask_parced_dir.shape))
-                    # u.show_image_cv(custom_mask_parced_inv, title="inv " + str(custom_mask_parced_inv.shape))
+                            center_coord_list.append([Xc - X1, Yc - Y1])
+                            center_labels_list.append(0)  # фон
+
+                    # Объединяем промпты в один
+                    point_coords_list = point_coords_dir + point_coords_inv + center_coord_list
+                    point_labels_list = point_labels_dir + point_labels_inv + center_labels_list
 
                     # Переходим в numpy
                     point_coords = np.array(point_coords_list)
@@ -667,9 +599,98 @@ def process(operation_mode, source_files, out_path):
                     # 6. Предсказание с комбинацией промптов
                     masks, scores, _ = predictor.predict(
                         point_coords=point_coords_normalized,
-                        # point_coords=None,
                         point_labels=point_labels,
-                        # point_labels=None,
+                        box=None,
+                        mask_input=mask_input[None, :, :],
+                        multimask_output=True
+                    )
+                else:
+                    """
+                    Предикт элементов текстуры (плиток). Швы трактуются как фон.
+                    """
+                    custom_mask = cv.cvtColor(curr_mask, cv.COLOR_BGR2GRAY)
+                    custom_mask_inv = 255 - custom_mask
+
+                    # 1. Подготовка маски-промпта
+                    """
+                    Промпт-маска - белые элементы (плитки) на черном фоне.
+                    """
+                    low_res_mask = cv.resize(custom_mask.astype(np.uint8), (256, 256), interpolation=cv.INTER_NEAREST)
+                    # u.show_image_cv(low_res_mask, title='low_res_mask: {}'.format(low_res_mask.shape))
+
+                    # 2. Нормализация: [0, 255] -> [0, 1]
+                    mask_input = (low_res_mask > 128).astype(np.float32)
+                    # u.show_image_cv(mask_input, title='mask_input: {}'.format(mask_input.shape))
+
+                    # 3-1. Генерация точечных промптов
+                    """
+                    Обработка контурами на прямом изображении дает точки на швах.
+                    Точки на швах при предикте элементов маркируются как фон.
+                    """
+                    (point_coords_dir,
+                     point_labels_dir,
+                     custom_mask_parced_dir) = sam2_model.prepare_point_prompts_from_mask(custom_mask,
+                                                                                          num_points=1000,
+                                                                                          min_contour_area=10000,
+                                                                                          max_contour_number=10,
+                                                                                          label=0)
+                    # u.show_image_cv(custom_mask_parced_dir, title="dir " + str(custom_mask_parced_dir.shape))
+
+                    # 3-2. Генерация точечных промптов на инверсном изображении
+                    """
+                    Обработка контурами на инвертированном изображении дает точки на элементах.
+                    Точки на элементах при предикте элементов маркируются как передний план.
+                    """
+                    (point_coords_inv,
+                     point_labels_inv,
+                     custom_mask_parced_inv) = sam2_model.prepare_point_prompts_from_mask(custom_mask_inv,
+                                                                                          num_points=1000,
+                                                                                          min_contour_area=10000,
+                                                                                          max_contour_number=10,
+                                                                                          label=1)
+                    # u.show_image_cv(custom_mask_parced_inv, title="inv " + str(custom_mask_parced_inv.shape))
+
+                    # Добавляем координаты центроидов
+                    """
+                    Центроиды элементов при предикте элементов трактуются как передний план
+                    """
+                    center_coord_list = []
+                    center_labels_list = []
+                    Y1, X1, Y2, X2 = curr_tile_coords
+                    for center in center_of_mass_original_list:
+                        Xc, Yc = center
+                        if (X1 <= Xc <= X2) and (Y1 <= Yc <= Y2):
+                            # print("Xc, Yc", Xc, Yc)
+                            center_coord_list.append([Xc - X1, Yc - Y1])
+                            center_labels_list.append(1)  # передний план
+
+                    # Объединяем промпты в один
+                    point_coords_list = point_coords_dir + point_coords_inv + center_coord_list
+                    point_labels_list = point_labels_dir + point_labels_inv + center_labels_list
+
+                    # Сохраняем промпты в общий список
+                    prompt_points_full_list.append(point_coords_list)
+                    prompt_labels_full_list.append(point_labels_list)
+
+                    # Переходим в numpy
+                    point_coords = np.array(point_coords_list)
+                    point_labels = np.array(point_labels_list)
+
+                    # 4. Нормализация координат точек к размеру тайла
+                    if len(point_coords) > 0:
+                        height, width = curr_tile.shape[:2]
+                        point_coords_normalized = point_coords / np.array([width, height])
+                    else:
+                        point_coords_normalized = None
+                        point_labels = None
+
+                    # 5. Установка изображения
+                    predictor.set_image(curr_tile)
+
+                    # 6. Предсказание с комбинацией промптов
+                    masks, scores, _ = predictor.predict(
+                        point_coords=point_coords_normalized,
+                        point_labels=point_labels,
                         box=None,
                         mask_input=mask_input[None, :, :],
                         multimask_output=True
@@ -725,7 +746,8 @@ def process(operation_mode, source_files, out_path):
                 # print(image_bgr_tiling.shape)
 
                 # Убираем шум
-                kernel = np.ones(s.TILING_POST_PROCESS_KERNEL, np.uint8)
+                kernel_size = s.TILING_POST_PROCESS_KERNEL
+                kernel = np.ones((kernel_size, kernel_size), np.uint8)
                 mask_cleaned = cv.morphologyEx(image_bgr_tiling,
                                                cv.MORPH_OPEN, kernel)
 
@@ -737,14 +759,21 @@ def process(operation_mode, source_files, out_path):
                 # Переходим к трехканальному изображению
                 image_bgr_tiling = cv.cvtColor(image_bgr_tiling, cv.COLOR_GRAY2BGR)
 
-            # Имя выходного файла тайла
+            # Имя выходного файла алгоритма тайла
             out_new_base_name = img_file_base_name[:-4] + "_tiling_mask.jpg"
             # Полный путь к выходному файлу
             out_new_file = os.path.join(out_path, out_new_base_name)
             if cv.imwrite(str(out_new_file), image_bgr_tiling):
                 print("  Сохранили выходной файл: {}".format(out_new_file))
 
-            # TODO: Отрисовать точки промпта на маске оригинального разрешения и записать файл
+            # Имя выходного файла промптов алгоритма тайла
+            # TODO: отрисовываем использованные промпты на маске оригинального разрешения
+            # image_bgr_tiling_prompts = image_bgr_tiling.copy()
+            # for idx_point,
+            # cv.circle(custom_mask_parced_dir, (Xc - X1, Yc - Y1), 7, s.red, -1)
+            # cv.circle(custom_mask_parced_inv, (Xc - X1, Yc - Y1), 7, s.red, -1)
+            # u.show_image_cv(u.resize_image_cv(image_bgr_tiling_prompts), title='prompts_img')
+
 
         time_1 = time.perf_counter()
         print("Обработали изображений: {}, время {:.2f} с.".format(len(img_file_list),
