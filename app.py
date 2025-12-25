@@ -506,8 +506,8 @@ def process(operation_mode, source_files, out_path):
 
             # Список полученных масок каждого тайла
             processed_mask_list = []
-            # Общие списки точечных промптов и меток
-            prompt_points_full_list, prompt_labels_full_list = [], []
+            # Промпты на маске в оригинальном разрешении
+            image_bgr_tiling_prompts = result_mask1024_original_size.copy()
             for idx, curr_mask in enumerate(mask_tiles_list):
                 print("  Тайл {}/{}".format(idx+1, len(mask_tiles_list)))
                 #
@@ -577,9 +577,21 @@ def process(operation_mode, source_files, out_path):
                             center_coord_list.append([Xc - X1, Yc - Y1])
                             center_labels_list.append(0)  # фон
 
-                    # Объединяем промпты в один
+                    # TODO: Объединяем промпты в один
                     point_coords_list = point_coords_dir + point_coords_inv + center_coord_list
                     point_labels_list = point_labels_dir + point_labels_inv + center_labels_list
+
+                    # Отрисовываем промпты на маске в оригинальном разрешении
+                    for idx_point, prompt_point in enumerate(point_coords_list):
+                        Xp = prompt_point[0]
+                        Yp = prompt_point[1]
+                        label_prompt = point_labels_list[idx_point]
+                        #
+                        if label_prompt == 0:
+                            cv.circle(image_bgr_tiling_prompts, (X1 + Xp, Y1 + Yp), 5, s.blue, -1)
+                        else:
+                            cv.circle(image_bgr_tiling_prompts, (X1 + Xp, Y1 + Yp), 5, s.red, -1)
+                    # u.show_image_cv(u.resize_image_cv(image_bgr_tiling_prompts), title='prompts_img')
 
                     # Переходим в numpy
                     point_coords = np.array(point_coords_list)
@@ -664,13 +676,21 @@ def process(operation_mode, source_files, out_path):
                             center_coord_list.append([Xc - X1, Yc - Y1])
                             center_labels_list.append(1)  # передний план
 
-                    # Объединяем промпты в один
+                    # TODO: Объединяем промпты в один
                     point_coords_list = point_coords_dir + point_coords_inv + center_coord_list
                     point_labels_list = point_labels_dir + point_labels_inv + center_labels_list
 
-                    # Сохраняем промпты в общий список
-                    prompt_points_full_list.append(point_coords_list)
-                    prompt_labels_full_list.append(point_labels_list)
+                    # Отрисовываем промпты на маске в оригинальном разрешении
+                    for idx_point, prompt_point in enumerate(point_coords_list):
+                        Xp = prompt_point[0]
+                        Yp = prompt_point[1]
+                        label_prompt = point_labels_list[idx_point]
+                        #
+                        if label_prompt == 0:
+                            cv.circle(image_bgr_tiling_prompts, (X1 + Xp, Y1 + Yp), 5, s.blue, -1)
+                        else:
+                            cv.circle(image_bgr_tiling_prompts, (X1 + Xp, Y1 + Yp), 5, s.red, -1)
+                    # u.show_image_cv(u.resize_image_cv(image_bgr_tiling_prompts), title='prompts_img')
 
                     # Переходим в numpy
                     point_coords = np.array(point_coords_list)
@@ -714,8 +734,8 @@ def process(operation_mode, source_files, out_path):
                 # print("scores", scores, mask_idx)
 
                 # TODO: ВАР-2. Выбор маски по максимальному iou
-                # iou_list = [w.calculate_mask_iou(custom_mask, pred_mask) for pred_mask in masks]
-                iou_list = [w.calculate_mask_iou(custom_mask_inv, pred_mask) for pred_mask in masks]
+                iou_list = [w.calculate_mask_iou(custom_mask, pred_mask) for pred_mask in masks]
+                # iou_list = [w.calculate_mask_iou(custom_mask_inv, pred_mask) for pred_mask in masks]
                 mask_idx = np.argmax(iou_list)
                 # print("iou_list", iou_list, mask_idx)
 
@@ -764,16 +784,14 @@ def process(operation_mode, source_files, out_path):
             # Полный путь к выходному файлу
             out_new_file = os.path.join(out_path, out_new_base_name)
             if cv.imwrite(str(out_new_file), image_bgr_tiling):
-                print("  Сохранили выходной файл: {}".format(out_new_file))
+                print("  Сохранили выходной файл маски: {}".format(out_new_file))
 
             # Имя выходного файла промптов алгоритма тайла
-            # TODO: отрисовываем использованные промпты на маске оригинального разрешения
-            # image_bgr_tiling_prompts = image_bgr_tiling.copy()
-            # for idx_point,
-            # cv.circle(custom_mask_parced_dir, (Xc - X1, Yc - Y1), 7, s.red, -1)
-            # cv.circle(custom_mask_parced_inv, (Xc - X1, Yc - Y1), 7, s.red, -1)
-            # u.show_image_cv(u.resize_image_cv(image_bgr_tiling_prompts), title='prompts_img')
-
+            out_new_base_name = img_file_base_name[:-4] + "_tiling_prompts.jpg"
+            # Полный путь к выходному файлу
+            out_new_file = os.path.join(out_path, out_new_base_name)
+            if cv.imwrite(str(out_new_file), image_bgr_tiling_prompts):
+                print("  Сохранили выходной файл промптов: {}".format(out_new_file))
 
         time_1 = time.perf_counter()
         print("Обработали изображений: {}, время {:.2f} с.".format(len(img_file_list),
