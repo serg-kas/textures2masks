@@ -121,8 +121,8 @@ def prepare_point_prompts_from_mask(mask,
     :return: массив точек, массив меток, визуализация подготовленных промптов
     """
     # Находим контуры в маске
-    # contours, _ = cv.findContours(mask, cv.RETR_EXTERNAL, cv.CHAIN_APPROX_SIMPLE)
-    contours, _ = cv.findContours(mask, cv.RETR_TREE, cv.CHAIN_APPROX_SIMPLE)
+    contours, _ = cv.findContours(mask, cv.RETR_EXTERNAL, cv.CHAIN_APPROX_SIMPLE)
+    # contours, _ = cv.findContours(mask, cv.RETR_TREE, cv.CHAIN_APPROX_SIMPLE)
 
     # Фильтруем контуры по площади и берем только самые крупные
     filtered_contours = []
