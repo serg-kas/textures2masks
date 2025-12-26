@@ -543,7 +543,7 @@ def process(operation_mode, source_files, out_path):
                     (point_coords_dir,
                      point_labels_dir,
                      custom_mask_parced_dir) = sam2_model.prepare_point_prompts_from_mask(custom_mask,
-                                                                                          num_points=1000,
+                                                                                          num_points=s.TILING_prompts_num_points,
                                                                                           min_contour_area=10000,
                                                                                           max_contour_number=10,
                                                                                           label=1)
@@ -558,7 +558,7 @@ def process(operation_mode, source_files, out_path):
                     (point_coords_inv,
                      point_labels_inv,
                      custom_mask_parced_inv) = sam2_model.prepare_point_prompts_from_mask(custom_mask_inv,
-                                                                                          num_points=1000,
+                                                                                          num_points=s.TILING_prompts_num_points,
                                                                                           min_contour_area=10000,
                                                                                           max_contour_number=10,
                                                                                           label=0)
@@ -645,7 +645,7 @@ def process(operation_mode, source_files, out_path):
                     (point_coords_dir,
                      point_labels_dir,
                      custom_mask_parced_dir) = sam2_model.prepare_point_prompts_from_mask(custom_mask,
-                                                                                          num_points=1000,
+                                                                                          num_points=s.TILING_prompts_num_points,
                                                                                           min_contour_area=10000,
                                                                                           max_contour_number=10,
                                                                                           label=0)
@@ -660,7 +660,7 @@ def process(operation_mode, source_files, out_path):
                     (point_coords_inv,
                      point_labels_inv,
                      custom_mask_parced_inv) = sam2_model.prepare_point_prompts_from_mask(custom_mask_inv,
-                                                                                          num_points=1000,
+                                                                                          num_points=s.TILING_prompts_num_points,
                                                                                           min_contour_area=10000,
                                                                                           max_contour_number=10,
                                                                                           label=1)
