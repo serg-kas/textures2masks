@@ -161,7 +161,7 @@ TILING_OVERLAP = get_value_from_env("TILING_OVERLAP", default_value=256)
 TILING_INVERSE_MODE = get_value_from_env("TILING_INVERSE_MODE", default_value=False)
 
 # Сколько точек брать вдоль контуров в тайле при подготовке промпта
-TILING_prompts_num_points = get_value_from_env("TILING_PROMPTS_NUM_POINTS", default_value=1000)
+TILING_PROMPTS_NUM_POINTS = get_value_from_env("TILING_PROMPTS_NUM_POINTS", default_value=1000)
 
 # Построцессинг (удаление шума и заливка мелких деталей)
 TILING_POST_PROCESS = get_value_from_env("TILING_POST_PROCESS", default_value=False)
