@@ -509,7 +509,7 @@ def process(operation_mode, source_files, out_path):
             # Промпты на маске в оригинальном разрешении
             image_bgr_tiling_prompts = result_mask1024_original_size.copy()
             for idx, curr_mask in enumerate(mask_tiles_list):
-                print("  Тайл {}/{}".format(idx+1, len(mask_tiles_list)))
+                print("\n  Тайл {}/{}".format(idx+1, len(mask_tiles_list)))
                 #
                 curr_tile = tiles_list[idx]
                 # u.show_image_cv(u.resize_image_cv(np.concatenate((curr_tile, curr_mask), axis=1), img_size=1024), title='tile | mask')

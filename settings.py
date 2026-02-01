@@ -155,7 +155,7 @@ PROMPT_POINT_COLOR_THRESH = get_value_from_env("PROMPT_POINT_COLOR_THRESH", defa
 # #############################################################
 # Разбиение на тайлы
 TILING_SIZE = 1024
-TILING_OVERLAP = get_value_from_env("TILING_OVERLAP", default_value=256)
+TILING_OVERLAP = get_value_from_env("TILING_OVERLAP", default_value=128)
 
 # Инверсный режим тайлинга (обычный режим - предикт "плиток", инверсный режим - предикт швов)
 TILING_INVERSE_MODE = get_value_from_env("TILING_INVERSE_MODE", default_value=False)

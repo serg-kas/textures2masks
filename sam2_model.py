@@ -138,6 +138,7 @@ def prepare_point_prompts_from_mask(mask,
         if area >= min_contour_area and len(filtered_contours) < max_contour_number:
             filtered_contours.append(contours[i])
 
+    print(f"    Label: {label}")
     print(f"    Найдено контуров: {len(contours)}, отфильтровано: {len(filtered_contours)}")
     print(f"    Площади контуров (первые 5): {[f'{area:.0f}' for _, area in contour_areas][:5]}")
 
