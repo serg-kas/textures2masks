@@ -580,7 +580,7 @@ def baseline(img,
 
     # Результат обработки в оригинальном разрешении
     result_image_final = convert_mask_to_image(combined_original_mask)
-    # u.show_image_cv(u.img_resize_cv(result_image_final, img_size=1024), title=str(result_image_final.shape))
+    # u.show_image_cv(u.resize_image_cv(result_image_final, img_size=1024), title=str(result_image_final.shape))
 
     return {
         "result_mask1024": result_mask1024,                             # маска в разрешении 1024
