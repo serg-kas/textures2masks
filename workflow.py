@@ -3,10 +3,9 @@
 """
 import numpy as np
 import cv2 as cv
-import random
 # from PIL import Image, ImageDraw, ImageFont
-# import supervision as sv
-#
+import random
+
 # import io
 # import os
 # import sys
@@ -713,14 +712,14 @@ def assemble_image(tiles,
 def filter_points_by_mask(point_coords_list,
                           point_labels_list,
                           tile_mask,
-                          inverse_mode=False):
+                          verbose=False):
     """
     Проверяет список точек на присутствие в маске
 
     :param point_coords_list: список координат точек
     :param point_labels_list: список соответствующих меток
     :param tile_mask: маска тайла
-    :param inverse_mode: инверсный режим (швы на переднем плане)
+    :param verbose: выводить дополнительную информацию
     :return: список отфильтрованных точек, список соответствующих им меток
     """
     # Списки отфильтрованных точек и соответствующих меток
@@ -747,5 +746,7 @@ def filter_points_by_mask(point_coords_list,
         #     point_coords_filtered_list.append([Xp, Yp])
         #     point_labels_filtered_list.append(label_prompt)
 
-    print("Верифицированы точечные промпты: {} -> {}".format(len(point_coords_list), len(point_coords_filtered_list)))
+    if verbose:
+        print("Верифицированы точечные промпты: {} -> {}".format(len(point_coords_list),
+                                                                 len(point_coords_filtered_list)))
     return point_coords_filtered_list, point_labels_filtered_list

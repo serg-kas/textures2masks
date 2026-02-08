@@ -163,9 +163,13 @@ TILING_INVERSE_MODE = get_value_from_env("TILING_INVERSE_MODE", default_value=Fa
 # Сколько точек брать вдоль контуров в тайле при подготовке промпта
 TILING_PROMPTS_NUM_POINTS = get_value_from_env("TILING_PROMPTS_NUM_POINTS", default_value=1000)
 
+# Расщепление точки центроида на тайле в заданном радиусе
+TILING_PROMPT_POINT_RADIUS = get_value_from_env("TILING_PROMPT_POINT_RADIUS", default_value=0)
+
 # Построцессинг (удаление шума и заливка мелких деталей)
 TILING_POST_PROCESS = get_value_from_env("TILING_POST_PROCESS", default_value=False)
-TILING_POST_PROCESS_KERNEL = get_value_from_env("TILING_POST_PROCESS_KERNEL", default_value=9)
+TILING_POST_PROCESS_KERNEL_W = get_value_from_env("TILING_POST_PROCESS_KERNEL_W", default_value=9)
+TILING_POST_PROCESS_KERNEL_H = get_value_from_env("TILING_POST_PROCESS_KERNEL_H", default_value=9)
 
 
 # #############################################################

@@ -3,9 +3,9 @@
 Режимы работы см.operation_mode_list
 """
 import numpy as np
-# import random
 import cv2 as cv
 # from PIL import Image
+import random
 
 import os
 import sys
@@ -565,6 +565,16 @@ def process(operation_mode, source_files, out_path):
                     # u.show_image_cv(custom_mask_parced_inv, title="inv " + str(custom_mask_parced_inv.shape))
                     # point_coords_inv, point_labels_inv = [], []
 
+                    # Объединяем промпты в один
+                    point_coords_list = point_coords_dir + point_coords_inv
+                    point_labels_list = point_labels_dir + point_labels_inv
+
+                    # Верифицируем (фильтруем) точечные промпты через маску данного тайла
+                    point_coords_list, point_labels_list = w.filter_points_by_mask(point_coords_list,
+                                                                                   point_labels_list,
+                                                                                   custom_mask_inv,
+                                                                                   verbose=s.VERBOSE)
+
                     # Добавляем координаты центроидов
                     """
                     Центроиды элементов при предикте швов трактуются как фон
@@ -572,17 +582,54 @@ def process(operation_mode, source_files, out_path):
                     center_coord_list = []
                     center_labels_list = []
                     Y1, X1, Y2, X2 = curr_tile_coords
+                    # print("Y1, X1, Y2, X2", Y1, X1, Y2, X2)
+
                     for center in center_of_mass_original_list:
                         Xc, Yc = center
-                        if (X1 <= Xc <= X2) and (Y1 <= Yc <= Y2):
-                            # print("Xc, Yc", Xc, Yc)
-                            center_coord_list.append([Xc - X1, Yc - Y1])
-                            center_labels_list.append(0)  # фон
-                    # center_coord_list, center_labels_list = [], []
+                        # print("Xc, Yc", Xc, Yc)
 
-                    # Объединяем промпты в один
-                    point_coords_list = point_coords_dir + point_coords_inv + center_coord_list
-                    point_labels_list = point_labels_dir + point_labels_inv + center_labels_list
+                        if s.TILING_PROMPT_POINT_RADIUS == 0:
+                            # Отправляем точку центроида в список
+                            if (X1 <= Xc <= X2) and (Y1 <= Yc <= Y2):
+                                center_coord_list.append([Xc - X1, Yc - Y1])
+                                center_labels_list.append(0)  # фон
+                        else:
+                            print("Расщепление точки центра: {} в радиусе: {}".format((Xc, Yc),
+                                                                                     s.TILING_PROMPT_POINT_RADIUS))
+
+                            # Фильтруем точки в заданном радиусе от центра
+                            radius_points_list = u.get_points_in_radius(custom_mask.shape,
+                                                                        (Xc, Yc),
+                                                                        s.TILING_PROMPT_POINT_RADIUS)
+
+                            # Оставляем заданное количество точек
+                            if len(radius_points_list) > 10:
+                                radius_points_list = random.sample(radius_points_list, 10)
+
+                            if len(radius_points_list) == 0:
+                                # Отправляем точку центроида в список
+                                if (X1 <= Xc <= X2) and (Y1 <= Yc <= Y2):
+                                    center_coord_list.append([Xc - X1, Yc - Y1])
+                                    center_labels_list.append(0)  # фон
+                            else:
+                                # Отправляем в список полученные "расщеплением" точки
+                                print(f"Отправляем в список полученные расщеплением {len(radius_points_list)} точек")
+                                for radius_point in radius_points_list:
+                                    Xr, Yr = radius_point
+                                    if (X1 <= Xr <= X2) and (Y1 <= Yr <= Y2):
+                                        # print("Xr, Yr", Xr, Yr)
+                                        center_coord_list.append([Xr - X1, Yr - Y1])
+                                        center_labels_list.append(0)  # фон
+
+                    # Верифицируем (фильтруем) точечные промпты через маску данного тайла
+                    center_coord_list, center_labels_list = w.filter_points_by_mask(center_coord_list,
+                                                                                    center_labels_list,
+                                                                                    custom_mask,
+                                                                                    verbose=s.VERBOSE)
+
+                    # center_coord_list, center_labels_list = [], []
+                    point_coords_list += center_coord_list
+                    point_labels_list += center_labels_list
 
                     # Отрисовываем промпты на маске в оригинальном разрешении
                     for idx_point, prompt_point in enumerate(point_coords_list):
@@ -671,11 +718,11 @@ def process(operation_mode, source_files, out_path):
                     point_coords_list = point_coords_dir + point_coords_inv
                     point_labels_list = point_labels_dir + point_labels_inv
 
-                    # TODO: верифицируем (фильтруем) точечные промпты через маску данного тайла
+                    # Верифицируем (фильтруем) точечные промпты через маску данного тайла
                     point_coords_list, point_labels_list = w.filter_points_by_mask(point_coords_list,
                                                                                    point_labels_list,
                                                                                    custom_mask,
-                                                                                   inverse_mode=False)
+                                                                                   verbose=s.VERBOSE)
 
                     # Добавляем координаты центроидов
                     """
@@ -684,12 +731,51 @@ def process(operation_mode, source_files, out_path):
                     center_coord_list = []
                     center_labels_list = []
                     Y1, X1, Y2, X2 = curr_tile_coords
+                    # print("Y1, X1, Y2, X2", Y1, X1, Y2, X2)
+
                     for center in center_of_mass_original_list:
                         Xc, Yc = center
-                        if (X1 <= Xc <= X2) and (Y1 <= Yc <= Y2):
-                            # print("Xc, Yc", Xc, Yc)
-                            center_coord_list.append([Xc - X1, Yc - Y1])
-                            center_labels_list.append(1)  # передний план
+                        # print("Xc, Yc", Xc, Yc)
+
+                        if s.TILING_PROMPT_POINT_RADIUS == 0:
+                            # Отправляем точку центроида в список
+                            if (X1 <= Xc <= X2) and (Y1 <= Yc <= Y2):
+                                center_coord_list.append([Xc - X1, Yc - Y1])
+                                center_labels_list.append(1)  # передний план
+                        else:
+                            print("Расщепление точки центра: {} в радиусе: {}".format((Xc, Yc),
+                                                                                     s.TILING_PROMPT_POINT_RADIUS))
+
+                            # Фильтруем точки в заданном радиусе от центра
+                            radius_points_list = u.get_points_in_radius(custom_mask.shape,
+                                                                        (Xc, Yc),
+                                                                        s.TILING_PROMPT_POINT_RADIUS)
+
+                            # Оставляем заданное количество точек
+                            if len(radius_points_list) > 10:
+                                radius_points_list = random.sample(radius_points_list, 10)
+
+                            if len(radius_points_list) == 0:
+                                # Отправляем точку центроида в список
+                                if (X1 <= Xc <= X2) and (Y1 <= Yc <= Y2):
+                                    center_coord_list.append([Xc - X1, Yc - Y1])
+                                    center_labels_list.append(1)  # передний план
+                            else:
+                                # Отправляем в список полученные "расщеплением" точки
+                                print(f"Отправляем в список полученные расщеплением {len(radius_points_list)} точек")
+                                for radius_point in radius_points_list:
+                                    Xr, Yr = radius_point
+                                    if (X1 <= Xr <= X2) and (Y1 <= Yr <= Y2):
+                                        # print("Xr, Yr", Xr, Yr)
+                                        center_coord_list.append([Xr - X1, Yr - Y1])
+                                        center_labels_list.append(1)  # передний план
+
+                    # Верифицируем (фильтруем) точечные промпты через маску данного тайла
+                    center_coord_list, center_labels_list = w.filter_points_by_mask(center_coord_list,
+                                                                                    center_labels_list,
+                                                                                    custom_mask,
+                                                                                    verbose=s.VERBOSE)
+
                     # center_coord_list, center_labels_list = [], []
                     point_coords_list += center_coord_list
                     point_labels_list += center_labels_list
@@ -732,17 +818,6 @@ def process(operation_mode, source_files, out_path):
                 tool_model_sam2.counter += 1
                 # print(masks.shape, scores.shape)
 
-                # TODO: Фильтр масок по размеру
-                # masks, filtered_scores, valid_indices = u.filter_masks_by_area(masks,
-                #                                                                scores,
-                #                                                                1000,
-                #                                                                800000)
-                # masks, filtered_scores, valid_indices = u.filter_masks_by_area_relative(masks,
-                #                                                                         scores,
-                #                                                                         curr_tile.shape,
-                #                                                                         min_area_ratio=0.1,
-                #                                                                         max_area_ratio=0.8)
-
                 # TODO: Выбор маски по максимальному score
                 # mask_idx = np.argmax(scores)
                 # print("scores", scores, mask_idx)
@@ -762,7 +837,7 @@ def process(operation_mode, source_files, out_path):
                 if s.TILING_INVERSE_MODE:
                     masks_img = 255 - masks_img
 
-                # Переходим к трёхканальному изображению TODO: это нужно ?
+                # TODO: Переходим к трёхканальному изображению
                 masks_img = cv.cvtColor(masks_img, cv.COLOR_GRAY2BGR)
 
                 # Сохраняем полученную маску в список
@@ -782,8 +857,9 @@ def process(operation_mode, source_files, out_path):
                 # print(image_bgr_tiling.shape)
 
                 # Убираем шум
-                kernel_size = s.TILING_POST_PROCESS_KERNEL
-                kernel = np.ones((kernel_size, kernel_size), np.uint8)
+                kernel_shape = (s.TILING_POST_PROCESS_KERNEL_W,
+                                s.TILING_POST_PROCESS_KERNEL_H)
+                kernel = np.ones(kernel_shape, np.uint8)
                 mask_cleaned = cv.morphologyEx(image_bgr_tiling,
                                                cv.MORPH_OPEN, kernel)
 
