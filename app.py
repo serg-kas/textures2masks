@@ -667,6 +667,16 @@ def process(operation_mode, source_files, out_path):
                     # u.show_image_cv(custom_mask_parced_inv, title="inv " + str(custom_mask_parced_inv.shape))
                     # point_coords_inv, point_labels_inv = [], []
 
+                    # Объединяем промпты в один
+                    point_coords_list = point_coords_dir + point_coords_inv
+                    point_labels_list = point_labels_dir + point_labels_inv
+
+                    # TODO: верифицируем (фильтруем) точечные промпты через маску данного тайла
+                    point_coords_list, point_labels_list = w.filter_points_by_mask(point_coords_list,
+                                                                                   point_labels_list,
+                                                                                   custom_mask,
+                                                                                   inverse_mode=False)
+
                     # Добавляем координаты центроидов
                     """
                     Центроиды элементов при предикте элементов трактуются как передний план
@@ -681,23 +691,8 @@ def process(operation_mode, source_files, out_path):
                             center_coord_list.append([Xc - X1, Yc - Y1])
                             center_labels_list.append(1)  # передний план
                     # center_coord_list, center_labels_list = [], []
-
-                    # Объединяем промпты в один
-                    point_coords_list = point_coords_dir + point_coords_inv + center_coord_list
-                    point_labels_list = point_labels_dir + point_labels_inv + center_labels_list
-
-                    # TODO: верифицируем (фильтруем) точечные промпты через маску данного тайла
-                    # point_coords_filtered_list = []
-                    # point_labels_filtered_list = []
-                    # if image_bgr_tiling_prompts[Y1 + Yp, X1 + Xp, 2] == 255:
-                    #     continue
-                    # cv.circle(image_bgr_tiling_prompts, (X1 + Xp, Y1 + Yp), 7, s.yellow, -1)
-                    # else:
-                    # cv.circle(image_bgr_tiling_prompts, (X1 + Xp, Y1 + Yp), 5, s.blue, -1)
-
-                    # point_coords_filtered_list.append([Xp, Yp])
-                    # point_labels_filtered_list.append(label_prompt)
-
+                    point_coords_list += center_coord_list
+                    point_labels_list += center_labels_list
 
                     # Отрисовываем промпты на маске в оригинальном разрешении
                     for idx_point, prompt_point in enumerate(point_coords_list):

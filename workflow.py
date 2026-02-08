@@ -708,3 +708,44 @@ def assemble_image(tiles,
     # Нормализуем с учетом весов
     weights[weights == 0] = 1  # избегаем деления на 0
     return result / weights[..., np.newaxis]
+
+
+def filter_points_by_mask(point_coords_list,
+                          point_labels_list,
+                          tile_mask,
+                          inverse_mode=False):
+    """
+    Проверяет список точек на присутствие в маске
+
+    :param point_coords_list: список координат точек
+    :param point_labels_list: список соответствующих меток
+    :param tile_mask: маска тайла
+    :param inverse_mode: инверсный режим (швы на переднем плане)
+    :return: список отфильтрованных точек, список соответствующих им меток
+    """
+    # Списки отфильтрованных точек и соответствующих меток
+    point_coords_filtered_list = []
+    point_labels_filtered_list = []
+
+    for idx_point, prompt_point in enumerate(point_coords_list):
+        # Точка на тайле и её метка
+        Xp = prompt_point[0]
+        Yp = prompt_point[1]
+        label_prompt = point_labels_list[idx_point]
+
+        # Значение маски в данной точке
+        mask_point_value = 1 if tile_mask[Xp, Yp] > 128 else 0
+        # print(Xp, Yp, label_prompt, mask_point_value)
+
+        #
+        if label_prompt == mask_point_value:
+            # Берем точки, где метка совпала со значением из маски
+            point_coords_filtered_list.append([Xp, Yp])
+            point_labels_filtered_list.append(label_prompt)
+        # else:
+        #     label_prompt = mask_point_value  # перезаписываем промпт значением из маски
+        #     point_coords_filtered_list.append([Xp, Yp])
+        #     point_labels_filtered_list.append(label_prompt)
+
+    print("Верифицированы точечные промпты: {} -> {}".format(len(point_coords_list), len(point_coords_filtered_list)))
+    return point_coords_filtered_list, point_labels_filtered_list
