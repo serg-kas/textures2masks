@@ -747,6 +747,6 @@ def filter_points_by_mask(point_coords_list,
         #     point_labels_filtered_list.append(label_prompt)
 
     if verbose:
-        print("Верифицированы точечные промпты: {} -> {}".format(len(point_coords_list),
+        print("    Верифицированы точечные промпты: {} -> {}".format(len(point_coords_list),
                                                                  len(point_coords_filtered_list)))
     return point_coords_filtered_list, point_labels_filtered_list
