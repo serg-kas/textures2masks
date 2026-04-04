@@ -116,6 +116,8 @@ def select_best_non_overlapping_masks(data, iou_threshold=0.5, num_random=3):
     Перебирает несколько вариантов сортировки, запускает жадный отбор
     и возвращает набор масок с максимальной суммой predicted_iou.
 
+    TODO: ускорить вычисления (предварительный расчет IoU и ранний выход)
+
     Параметры:
         data: list of dict (каждый dict содержит 'segmentation', 'predicted_iou', 'area', ...)
         iou_threshold: порог IoU для пересечения
@@ -187,17 +189,6 @@ def calculate_mask_iou(mask1, mask2):
     iou = intersection_count / union_count
     return iou
 
-
-# def convert_mask_to_image(mask):
-#     """
-#     Преобразует маску формата True/False в черно-белое изображение
-#
-#     :param mask: бинарная маска True/False
-#     :return: ч/б маска
-#     """
-#     img = np.zeros((*mask.shape, 3), dtype=np.uint8)
-#     img[mask] = [255, 255, 255]
-#     return img
 def convert_mask_to_image(mask, rgb=True):
     """
     Преобразует бинарную маску True/False в изображение
@@ -291,9 +282,6 @@ def baseline(img,
     Алгоритм обработки изображения через центры масс.
 
     Если quick_exit=True, то выходит после формирования маски в оригинальном разрешении через ресайз от 1024
-
-    TODO: возвращать не только изображения, но и маски и/или другие данные
-
     """
     if verbose:
         print("Алгоритм BaseLine обработки через центры масс")
@@ -404,8 +392,10 @@ def baseline(img,
     if verbose:
         print("  Сформировали выходную маску размерности: {}".format(combined_mask.shape))
 
+    # Перевод бинарной маски в одноканальное изображение 1024
+    result_mask1024 = convert_mask_to_image(combined_mask, rgb=False)
+
     # Ресайз к оригинальному разрешению маски, полученной через разрешение 1024
-    result_mask1024 = convert_mask_to_image(combined_mask, rgb=True)
     result_mask1024_original_size = cv.resize(result_mask1024, (W, H),
                                               interpolation=cv.INTER_LANCZOS4)  # cv.INTER_CUBIC
 
@@ -426,7 +416,7 @@ def baseline(img,
           "которая поместится в окно 1024 пиксела в оригинальном разрешении: {}".format(max_mask_size_1024))
 
     # Визуализируем рассчитанные центры масс в разрешении 1024
-    result_mask1024_centers = result_mask1024.copy()
+    result_mask1024_centers = convert_mask_to_image(combined_mask, rgb=True) # для визуализации берем 3-х канальное изображение
     for idx, center in enumerate(center_of_mass_list[:]):
         X, Y = center
         X = int(X)
@@ -440,7 +430,6 @@ def baseline(img,
     # u.show_image_cv(result_mask1024_centers, title=str(result_mask1024_centers.shape))
 
     # Пересчитываем центры масс к оригинальному разрешению
-    # result_mask_original_centers = result_mask1024_original_size.copy() # TODO: Визуализацию не используем
     center_of_mass_original_list = []
     for center in center_of_mass_list:
         X_1024, Y_1024 = center
@@ -449,9 +438,7 @@ def baseline(img,
         X = int(X)
         Y = int(Y)
         center_of_mass_original_list.append((X, Y))
-        # radius = int(5 * W / 1024)
-        # result_mask_original_centers = cv.circle(result_mask_original_centers, (X, Y), radius, s.blue, -1)
-    # u.show_image_cv(u.resize_image_cv(result_mask_original_centers, img_size=1024), title=str(result_mask_original_centers.shape))
+
     if verbose:
         print("  Пересчитали центры масс к оригинальному разрешению: {}".format(len(center_of_mass_original_list)))
 
@@ -510,6 +497,20 @@ def baseline(img,
     SCORE_TRESHOLD = s.SAM2_score_threshold
     if verbose:
         print("  Тресхолд score, ниже которого применяется алгоритм отбора масок по IoU: {}".format(SCORE_TRESHOLD))
+
+    # Применение алгоритма расщепления промптов
+    if s.PROMPT_POINT_RADIUS == 0:
+      if verbose:
+            print("  Промт - одна точка в центре масс каждой маски")
+    else:
+        if verbose:
+            print("  Промт - {} точек в радиусе {} от центра масс каждой маски".format(s.PROMPT_POINT_NUMBER,
+                                                                                       s.PROMPT_POINT_RADIUS))
+
+        # Применение цветового фильтра точек промптов
+        if s.PROMPT_POINT_COLOR_FILTER:
+            if verbose:
+                print("  Точки промптов отфильтрованы по цвету вокруг (b, g, r) с тресхолдом: {}".format(s.PROMPT_POINT_COLOR_THRESH))
 
     # Цикл обработки кропов
     counter_crop = 0
@@ -654,7 +655,7 @@ def baseline(img,
         print("Собрали комбинированную выходную маску в оригинальном разрешении: {}".format(combined_original_mask.shape))
 
     # Результат обработки в оригинальном разрешении
-    result_image_final = convert_mask_to_image(combined_original_mask)
+    result_image_final = convert_mask_to_image(combined_original_mask, rgb=False)
     # u.show_image_cv(u.resize_image_cv(result_image_final, img_size=1024), title=str(result_image_final.shape))
 
     return {
