@@ -692,7 +692,7 @@ def split_into_tiles(image,
     if overlap >= tile_size:
         raise ValueError("overlap must be less than tile_size")
 
-    # Добавление размерности каналов при необходимости
+    # Добавление размерности каналов при необходимости TODO: проверить
     if image.ndim == 2:
         image = image[..., np.newaxis]
     elif image.ndim != 3:

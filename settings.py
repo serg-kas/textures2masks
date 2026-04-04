@@ -93,7 +93,7 @@ OPERATION_MODE_DICT = {
                        'help':'Справочная информация',
                        'self_test':'Тестовый запуск',
                        'workflow_baseline':'Базовый алгоритм через ресайз к разрешению 1024',
-                       'workflow_tiling':'Алгоритм на основе тайлинга - В РАБОТЕ',
+                       'workflow_tiling':'Алгоритм на основе тайлинга',
                        'new1':'Алгоритм новый (заготовка)'
 }
 OPERATION_MODE_LIST = list(OPERATION_MODE_DICT.keys())

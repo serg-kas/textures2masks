@@ -51,6 +51,9 @@ def process(operation_mode, source_files, out_path):
     """
     time_start = time.time()
 
+    # Версия приложения
+    print("Запуск приложения, версия: {}".format(s.VERSION))
+
     # Выбор режима работы. Находит первый подходящий режим.
     # (например, по параметру 'tesT' будет выбран режим 'self_test')
     for curr_mode in operation_mode_list:
@@ -521,8 +524,11 @@ def process(operation_mode, source_files, out_path):
                     """
                     Предикт швов. Элементы текстуры (плитки) трактуются как фон.
                     """
-                    custom_mask = cv.cvtColor(curr_mask, cv.COLOR_BGR2GRAY)
+                    # custom_mask = cv.cvtColor(curr_mask, cv.COLOR_BGR2GRAY)
+                    # custom_mask_inv = 255 - custom_mask
+                    custom_mask = curr_mask.copy()
                     custom_mask_inv = 255 - custom_mask
+
 
                     # 1. Подготовка маски-промпта
                     """
@@ -670,7 +676,9 @@ def process(operation_mode, source_files, out_path):
                     """
                     Предикт элементов текстуры (плиток). Швы трактуются как фон.
                     """
-                    custom_mask = cv.cvtColor(curr_mask, cv.COLOR_BGR2GRAY)
+                    # custom_mask = cv.cvtColor(curr_mask, cv.COLOR_BGR2GRAY)
+                    # custom_mask_inv = 255 - custom_mask
+                    custom_mask = curr_mask.copy()
                     custom_mask_inv = 255 - custom_mask
 
                     # 1. Подготовка маски-промпта
@@ -818,20 +826,23 @@ def process(operation_mode, source_files, out_path):
                 tool_model_sam2.counter += 1
                 # print(masks.shape, scores.shape)
 
-                # TODO: Выбор маски по максимальному score
+                # ВАРИАНТ 1: Выбор маски по максимальному score
                 # mask_idx = np.argmax(scores)
                 # print("scores", scores, mask_idx)
 
-                # Выбор маски по максимальному iou
+                # ВАРИАНТ 2: Выбор маски по максимальному iou
                 if s.TILING_INVERSE_MODE:
                     iou_list = [w.calculate_mask_iou(custom_mask_inv, pred_mask) for pred_mask in masks]
                 else:
+                    print("custom_mask.shape", custom_mask.shape)
+                    print("pred_mask.shape", masks[0].shape)
                     iou_list = [w.calculate_mask_iou(custom_mask, pred_mask) for pred_mask in masks]
                 mask_idx = np.argmax(iou_list)
                 # print("iou_list", iou_list, mask_idx)
 
                 # Берем маску, по выбранному mask_idx и переводим в ч/б изображение
                 masks_img = masks[mask_idx].astype(np.uint8) * 255
+                print("masks_img.shape", masks_img.shape)
 
                 # В инверсном режиме готовую маску надо инвертировать
                 if s.TILING_INVERSE_MODE:
