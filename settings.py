@@ -142,7 +142,7 @@ SAM2_score_threshold = 0.95
 #           ПАРАМЕТРЫ ОБРАБОТКИ базового алгоритма
 # #############################################################
 # Продвинутый отбор непересекающихся масок
-SELECT_NON_OVERLAPPING_MASKS_ADVANCED = get_value_from_env("SELECT_NON_OVERLAPPING_MASKS_ADVANCED", default_value=True)
+SELECT_NON_OVERLAPPING_MASKS_ADVANCED = get_value_from_env("SELECT_NON_OVERLAPPING_MASKS_ADVANCED", default_value=False)
 
 # Фильтр масок в разрешении 1024 по размеру
 AUTO_CALCULATE_AREAS = get_value_from_env("AUTO_CALCULATE_AREAS", default_value=True)
