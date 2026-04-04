@@ -111,6 +111,57 @@ def find_non_overlapping_masks(data,
     return non_overlapping_list
 
 
+def select_best_non_overlapping_masks(data, iou_threshold=0.5, num_random=3):
+    """
+    Перебирает несколько вариантов сортировки, запускает жадный отбор
+    и возвращает набор масок с максимальной суммой predicted_iou.
+
+    Параметры:
+        data: list of dict (каждый dict содержит 'segmentation', 'predicted_iou', 'area', ...)
+        iou_threshold: порог IoU для пересечения
+        num_random: сколько дополнительных случайных порядков попробовать
+    """
+    # Определяем стратегии сортировки
+    strategies = [
+        ("area_asc", lambda x: x['area'], False),
+        ("area_desc", lambda x: x['area'], True),
+        ("iou_desc", lambda x: x['predicted_iou'], True),
+        ("iou_asc", lambda x: x['predicted_iou'], False),
+        ("area_iou_product", lambda x: x['area'] * x['predicted_iou'], True),
+        ("area_iou_ratio", lambda x: x['area'] / (x['predicted_iou'] + 1e-6), False),
+    ]
+
+    # Если есть stability_score, добавляем стратегии с ним
+    if 'stability_score' in data[0]:
+        strategies.append(("stability_desc", lambda x: x.get('stability_score', 0), True))
+        strategies.append(("area_stability", lambda x: x['area'] * x.get('stability_score', 0), True))
+
+    best_masks = None
+    best_score = -1.0
+
+    # Перебираем все стратегии
+    for name, key_func, rev in strategies:
+        sorted_data = sorted(data, key=key_func, reverse=rev)
+        selected = find_non_overlapping_masks(sorted_data, iou_threshold)
+        # Вычисляем метрику: сумма predicted_iou
+        score = sum(m['predicted_iou'] for m in selected)
+        if score > best_score:
+            best_score = score
+            best_masks = selected
+
+    # Добавляем случайные сортировки (для устойчивости)
+    for i in range(num_random):
+        shuffled = random.sample(data, len(data))
+        selected = find_non_overlapping_masks(shuffled, iou_threshold)
+        score = sum(m['predicted_iou'] for m in selected)
+        if score > best_score:
+            best_score = score
+            best_masks = selected
+
+    print(f"Выбрана стратегия с суммарной уверенностью = {best_score:.3f}")
+    return best_masks
+
+
 def calculate_mask_iou(mask1, mask2):
     """
     IoU для бинарных масок
@@ -290,14 +341,20 @@ def baseline(img,
     if verbose:
         print("  Получили список масок: {}, время {:.2f} c.".format(len(sam2_result), end_time - start_time))
 
-    # Сортируем результаты по увеличению площади маски
-    sam2_result_sorted = sorted(sam2_result,
-                                key=lambda x: x['area'],
-                                reverse=False)
-
-    # Отбираем не пересекающиеся маски по установленному порогу
-    non_overlapping_result = find_non_overlapping_masks(sam2_result_sorted,  #  TODO: проверить алгоритм
-                                                        iou_threshold=s.SAM2_iou_threshold)
+    # Отбор непересекающихся масок:
+    if s.SELECT_NON_OVERLAPPING_MASKS_ADVANCED:
+        # Функция оптимального выбора непересекающихся масок
+        non_overlapping_result = select_best_non_overlapping_masks(sam2_result,
+                                                                   iou_threshold=0.5,
+                                                                   num_random=3)
+    else:
+        # Сортируем результаты по увеличению площади маски
+        sam2_result_sorted = sorted(sam2_result,
+                                    key=lambda x: x['area'],
+                                    reverse=False)
+        # Отбираем не пересекающиеся маски по установленному порогу
+        non_overlapping_result = find_non_overlapping_masks(sam2_result_sorted,
+                                                            iou_threshold=s.SAM2_iou_threshold)
 
     # Отбираем маски по площади
     if verbose:
