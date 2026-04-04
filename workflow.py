@@ -137,15 +137,31 @@ def calculate_mask_iou(mask1, mask2):
     return iou
 
 
-def convert_mask_to_image(mask):
+# def convert_mask_to_image(mask):
+#     """
+#     Преобразует маску формата True/False в черно-белое изображение
+#
+#     :param mask: бинарная маска True/False
+#     :return: ч/б маска
+#     """
+#     img = np.zeros((*mask.shape, 3), dtype=np.uint8)
+#     img[mask] = [255, 255, 255]
+#     return img
+def convert_mask_to_image(mask, rgb=True):
     """
-    Преобразует маску формата True/False в черно-белое изображение
+    Преобразует бинарную маску True/False в изображение
 
-    :param mask: бинарная маска True/False
-    :return: ч/б маска
+    :param mask: бинарная маска True/False (2D массив)
+    :param rgb: если True, возвращает трехмерное RGB-изображение (H, W, 3)
+                если False, возвращает двумерное черно-белое изображение (H, W)
+    :return: изображение в формате uint8 (значения 0 или 255)
     """
-    img = np.zeros((*mask.shape, 3), dtype=np.uint8)
-    img[mask] = [255, 255, 255]
+    if rgb:
+        img = np.zeros((*mask.shape, 3), dtype=np.uint8)
+        img[mask] = [255, 255, 255]
+    else:
+        img = np.zeros(mask.shape, dtype=np.uint8)
+        img[mask] = 255
     return img
 
 
@@ -201,7 +217,9 @@ def calculate_mask_dimensions(mask):
 
 def calculate_mask_dimensions_cv(mask):
     """
-    Маска должна быть бинарным изображением
+    Вычисляет ширину и высоту объекта в бинарной маске через контуры
+
+    Маска должна быть бинарной
     """
     contours, _ = cv.findContours(
         mask.astype(np.uint8),
@@ -220,6 +238,7 @@ def baseline(img,
              verbose=False):
     """
     Алгоритм обработки изображения через центры масс.
+
     Если quick_exit=True, то выходит после формирования маски в оригинальном разрешении через ресайз от 1024
 
     TODO: возвращать не только изображения, но и маски и/или другие данные
@@ -228,7 +247,7 @@ def baseline(img,
     if verbose:
         print("Алгоритм BaseLine обработки через центры масс")
 
-    # TODO: Получаем модель (если модели нет поднимать ошибку?)
+    # Получаем модель
     tool_model_sam2 = t.get_tool_by_name('model_sam2', tool_list=tool_list)
 
     # Исходное изображение
@@ -329,7 +348,7 @@ def baseline(img,
         print("  Сформировали выходную маску размерности: {}".format(combined_mask.shape))
 
     # Ресайз к оригинальному разрешению маски, полученной через разрешение 1024
-    result_mask1024 = convert_mask_to_image(combined_mask)
+    result_mask1024 = convert_mask_to_image(combined_mask, rgb=True)
     result_mask1024_original_size = cv.resize(result_mask1024, (W, H),
                                               interpolation=cv.INTER_LANCZOS4)  # cv.INTER_CUBIC
 

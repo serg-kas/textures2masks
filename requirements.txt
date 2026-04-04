@@ -11,7 +11,7 @@ hydra-core
 iopath
 pillow
 #
-#matplotlib
+matplotlib
 #jupyter
 #eva-decord
 #
