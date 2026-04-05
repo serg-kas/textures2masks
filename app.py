@@ -609,7 +609,7 @@ def process(operation_mode, source_files, out_path):
 
                         if s.TILING_PROMPT_POINT_RADIUS == 0:
                             # Отправляем точку центроида в список
-                            if (X1 <= Xc <= X2) and (Y1 <= Yc <= Y2):
+                            if (X1 < Xc < X2) and (Y1 <= Yc <= Y2):
                                 print(f"Отправляем в список точку центроида: {(Xc - X1, Yc - Y1)}")
                                 center_coord_list.append([Xc - X1, Yc - Y1])
                                 center_labels_list.append(0)  # фон
@@ -631,7 +631,7 @@ def process(operation_mode, source_files, out_path):
 
                             if len(radius_points_list) == 0:
                                 # Отправляем точку центроида в список
-                                if (X1 <= Xc <= X2) and (Y1 <= Yc <= Y2):
+                                if (X1 < Xc < X2) and (Y1 <= Yc <= Y2):
                                     print(f"Отправляем в список точку центроида: {(Xc - X1, Yc - Y1)}")
                                     center_coord_list.append([Xc - X1, Yc - Y1])
                                     center_labels_list.append(0)  # фон
@@ -640,7 +640,6 @@ def process(operation_mode, source_files, out_path):
                                 print(f"Отправляем в список {len(radius_points_list)} точек, полученных расщеплением")
                                 for radius_point in radius_points_list:
                                     Xr, Yr = radius_point
-                                    # if (X1 <= Xr <= X2) and (Y1 <= Yr <= Y2):
                                     if (X1 < Xr < X2) and (Y1 < Yr < Y2):
                                         # print("Xr, Yr", Xr, Yr)
                                         center_coord_list.append([Xr - X1, Yr - Y1])
@@ -772,7 +771,7 @@ def process(operation_mode, source_files, out_path):
 
                         if s.TILING_PROMPT_POINT_RADIUS == 0:
                             # Отправляем точку центроида в список
-                            if (X1 <= Xc <= X2) and (Y1 <= Yc <= Y2):
+                            if (X1 < Xc < X2) and (Y1 < Yc < Y2):
                                 print(f"Отправляем в список точку центроида: {(Xc - X1, Yc - Y1)}")
                                 center_coord_list.append([Xc - X1, Yc - Y1])
                                 center_labels_list.append(1)  # передний план
@@ -794,7 +793,7 @@ def process(operation_mode, source_files, out_path):
 
                             if len(radius_points_list) == 0:
                                 # Отправляем точку центроида в список
-                                if (X1 <= Xc <= X2) and (Y1 <= Yc <= Y2):
+                                if (X1 < Xc < X2) and (Y1 <= Yc <= Y2):
                                     print(f"  Отправляем в список точку центроида: {(Xc - X1, Yc - Y1)}")
                                     center_coord_list.append([Xc - X1, Yc - Y1])
                                     center_labels_list.append(1)  # передний план
@@ -803,7 +802,6 @@ def process(operation_mode, source_files, out_path):
                                 print(f"  Отправляем в список {len(radius_points_list)} точек, полученные расщеплением")
                                 for radius_point in radius_points_list:
                                     Xr, Yr = radius_point
-                                    # if (X1 <= Xr <= X2) and (Y1 <= Yr <= Y2):
                                     if (X1 < Xr < X2) and (Y1 < Yr < Y2):
                                         # print("Xr, Yr", Xr, Yr)
                                         center_coord_list.append([Xr - X1, Yr - Y1])
