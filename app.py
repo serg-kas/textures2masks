@@ -618,14 +618,16 @@ def process(operation_mode, source_files, out_path):
                                                                                      s.TILING_PROMPT_POINT_RADIUS))
 
                             # Фильтруем точки в заданном радиусе от центра
-                            radius_points_list = u.get_points_in_radius(custom_mask.shape,
-                                                                        (Xc, Yc),
+                            # radius_points_list = u.get_points_in_radius(custom_mask.shape,
+                            #                                             (Xc, Yc),
+                            #                                             s.TILING_PROMPT_POINT_RADIUS)
+                            radius_points_list = u.get_points_in_radius((Xc, Yc),
                                                                         s.TILING_PROMPT_POINT_RADIUS)
                             # print("radius_points_list {}".format(len(radius_points_list)))
 
                             # Оставляем заданное количество точек
-                            if len(radius_points_list) > 10:
-                                radius_points_list = random.sample(radius_points_list, 10)
+                            if len(radius_points_list) > 50:
+                                radius_points_list = random.sample(radius_points_list, 50)
 
                             if len(radius_points_list) == 0:
                                 # Отправляем точку центроида в список
@@ -638,7 +640,8 @@ def process(operation_mode, source_files, out_path):
                                 print(f"Отправляем в список {len(radius_points_list)} точек, полученных расщеплением")
                                 for radius_point in radius_points_list:
                                     Xr, Yr = radius_point
-                                    if (X1 <= Xr <= X2) and (Y1 <= Yr <= Y2):
+                                    # if (X1 <= Xr <= X2) and (Y1 <= Yr <= Y2):
+                                    if (X1 < Xr <= X2) and (Y1 < Yr <= Y2):
                                         # print("Xr, Yr", Xr, Yr)
                                         center_coord_list.append([Xr - X1, Yr - Y1])
                                         center_labels_list.append(0)  # фон
@@ -783,11 +786,11 @@ def process(operation_mode, source_files, out_path):
                             #                                             s.TILING_PROMPT_POINT_RADIUS)
                             radius_points_list = u.get_points_in_radius((Xc, Yc),
                                                                         s.TILING_PROMPT_POINT_RADIUS)
-                            print("radius_points_list {}".format(len(radius_points_list)))
+                            # print("radius_points_list {}".format(len(radius_points_list)))
 
                             # Оставляем заданное количество точек
-                            if len(radius_points_list) > 10:
-                                radius_points_list = random.sample(radius_points_list, 10)
+                            if len(radius_points_list) > 50:
+                                radius_points_list = random.sample(radius_points_list, 50)
 
                             if len(radius_points_list) == 0:
                                 # Отправляем точку центроида в список
@@ -800,7 +803,8 @@ def process(operation_mode, source_files, out_path):
                                 print(f"  Отправляем в список {len(radius_points_list)} точек, полученные расщеплением")
                                 for radius_point in radius_points_list:
                                     Xr, Yr = radius_point
-                                    if (X1 <= Xr <= X2) and (Y1 <= Yr <= Y2):
+                                    # if (X1 <= Xr <= X2) and (Y1 <= Yr <= Y2):
+                                    if (X1 <= Xr < X2) and (Y1 <= Yr < Y2):
                                         # print("Xr, Yr", Xr, Yr)
                                         center_coord_list.append([Xr - X1, Yr - Y1])
                                         center_labels_list.append(1)  # передний план
