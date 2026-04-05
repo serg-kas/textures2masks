@@ -303,9 +303,9 @@ def process(operation_mode, source_files, out_path):
                                      verbose=s.VERBOSE)
 
             # result_mask1024 = result_dict['result_mask1024']                              # маска в разрешении 1024
-            result_mask1024_centers = result_dict['result_mask1024_centers']              # маска с визуализацией центров масс масок
+            result_mask1024_centers = result_dict['result_mask1024_centers_rgb']          # маска с визуализацией центров масс масок
             result_mask1024_original_size = result_dict['result_mask1024_original_size']  # маска в оригинальном разрешении полученная через разрешение 1024
-            result_image_final = result_dict['result_image_final']                        #  выходная маска в оригинальном разрешении
+            result_image_final = result_dict['result_mask_original_final']                # выходная маска в оригинальном разрешении
 
             # Имя выходного файла маски в оригинальном разрешении, полученной через ресайз
             out_img_base_name_mask1024 = img_file_base_name[:-4] + "_mask_1024.jpg"
@@ -426,7 +426,7 @@ def process(operation_mode, source_files, out_path):
                                      verbose=s.VERBOSE)
 
             # result_mask1024 = result_dict['result_mask1024']                              # маска в разрешении 1024
-            # result_mask1024_centers = result_dict['result_mask1024_centers']              # маска с визуализацией центров масс масок
+            # result_mask1024_centers = result_dict['result_mask1024_centers_rgb']          # маска с визуализацией центров масс масок
             result_mask1024_original_size = result_dict['result_mask1024_original_size']  # маска в оригинальном разрешении полученная через разрешение 1024
             center_of_mass_original_list = result_dict['center_of_mass_original_list']    # центры масс масок, пересчитанные в оригинальное разрешение
 
@@ -462,7 +462,7 @@ def process(operation_mode, source_files, out_path):
             #     if cv.imwrite(str(out_tile_file), tile):
             #         print("  Сохранили тайл: {}".format(out_tile_file))
 
-            # TODO: Возможна предобработка каждого тайла
+            # Возможна предобработка каждого тайла
             # processed_tiles = [cv.cvtColor(tile, cv.COLOR_BGR2RGB) for tile in tiles_list]
 
             # # Сборка выходного изображения
@@ -491,6 +491,18 @@ def process(operation_mode, source_files, out_path):
             #     out_tile_file = os.path.join(out_path, out_tile_base_name)
             #     if cv.imwrite(str(out_tile_file), tile):
             #         print("  Сохранили тайл маски: {}".format(out_tile_file))
+            #
+            # # Сборка выходного изображения
+            # image_mask_reconstructed = w.assemble_image(mask_tiles_list,
+            #                                            mask_coords_list,
+            #                                            original_shape=image_bgr_original.shape,
+            #                                            overlap=s.TILING_OVERLAP)
+            # # Сохранение собранного файла
+            # out_new_base_name = img_file_base_name[:-4] + "_mask_reconstructed.jpg"
+            # # Полный путь к выходному файлу
+            # out_new_file = os.path.join(out_path, out_new_base_name)
+            # if cv.imwrite(str(out_new_file), image_mask_reconstructed):
+            #     print("  Сохранили выходной файл: {}".format(out_new_file))
 
             # Инициализация предиктора
             predictor = sam2_model.get_predictor(tool_model_sam2.model, verbose=s.VERBOSE)
@@ -509,8 +521,11 @@ def process(operation_mode, source_files, out_path):
 
             # Список полученных масок каждого тайла
             processed_mask_list = []
+
             # Промпты на маске в оригинальном разрешении
-            image_bgr_tiling_prompts = result_mask1024_original_size.copy()
+            # image_bgr_tiling_prompts = result_mask1024_original_size.copy()
+            image_bgr_tiling_prompts = cv.cvtColor(result_mask1024_original_size, cv.COLOR_GRAY2BGR)
+
             for idx, curr_mask in enumerate(mask_tiles_list):
                 print("\n  Тайл {}/{}".format(idx+1, len(mask_tiles_list)))
                 #
@@ -518,17 +533,15 @@ def process(operation_mode, source_files, out_path):
                 # u.show_image_cv(u.resize_image_cv(np.concatenate((curr_tile, curr_mask), axis=1), img_size=1024), title='tile | mask')
 
                 curr_tile_coords = mask_coords_list[idx]
-                # print(curr_tile_coords)
 
                 if s.TILING_INVERSE_MODE:
                     """
                     Предикт швов. Элементы текстуры (плитки) трактуются как фон.
                     """
                     # custom_mask = cv.cvtColor(curr_mask, cv.COLOR_BGR2GRAY)
-                    # custom_mask_inv = 255 - custom_mask
                     custom_mask = curr_mask.copy()
+                    custom_mask = custom_mask.squeeze()  # TODO: из (1024,1024,1) -> (1024,1024)
                     custom_mask_inv = 255 - custom_mask
-
 
                     # 1. Подготовка маски-промпта
                     """
@@ -597,6 +610,7 @@ def process(operation_mode, source_files, out_path):
                         if s.TILING_PROMPT_POINT_RADIUS == 0:
                             # Отправляем точку центроида в список
                             if (X1 <= Xc <= X2) and (Y1 <= Yc <= Y2):
+                                print(f"Отправляем в список точку центроида: {(Xc - X1, Yc - Y1)}")
                                 center_coord_list.append([Xc - X1, Yc - Y1])
                                 center_labels_list.append(0)  # фон
                         else:
@@ -607,6 +621,7 @@ def process(operation_mode, source_files, out_path):
                             radius_points_list = u.get_points_in_radius(custom_mask.shape,
                                                                         (Xc, Yc),
                                                                         s.TILING_PROMPT_POINT_RADIUS)
+                            # print("radius_points_list {}".format(len(radius_points_list)))
 
                             # Оставляем заданное количество точек
                             if len(radius_points_list) > 10:
@@ -615,11 +630,12 @@ def process(operation_mode, source_files, out_path):
                             if len(radius_points_list) == 0:
                                 # Отправляем точку центроида в список
                                 if (X1 <= Xc <= X2) and (Y1 <= Yc <= Y2):
+                                    print(f"Отправляем в список точку центроида: {(Xc - X1, Yc - Y1)}")
                                     center_coord_list.append([Xc - X1, Yc - Y1])
                                     center_labels_list.append(0)  # фон
                             else:
                                 # Отправляем в список полученные "расщеплением" точки
-                                print(f"Отправляем в список полученные расщеплением {len(radius_points_list)} точек")
+                                print(f"Отправляем в список {len(radius_points_list)} точек, полученных расщеплением")
                                 for radius_point in radius_points_list:
                                     Xr, Yr = radius_point
                                     if (X1 <= Xr <= X2) and (Y1 <= Yr <= Y2):
@@ -677,8 +693,8 @@ def process(operation_mode, source_files, out_path):
                     Предикт элементов текстуры (плиток). Швы трактуются как фон.
                     """
                     # custom_mask = cv.cvtColor(curr_mask, cv.COLOR_BGR2GRAY)
-                    # custom_mask_inv = 255 - custom_mask
                     custom_mask = curr_mask.copy()
+                    custom_mask = custom_mask.squeeze()  # TODO: из (1024,1024,1) -> (1024,1024)
                     custom_mask_inv = 255 - custom_mask
 
                     # 1. Подготовка маски-промпта
@@ -748,6 +764,7 @@ def process(operation_mode, source_files, out_path):
                         if s.TILING_PROMPT_POINT_RADIUS == 0:
                             # Отправляем точку центроида в список
                             if (X1 <= Xc <= X2) and (Y1 <= Yc <= Y2):
+                                print(f"Отправляем в список точку центроида: {(Xc - X1, Yc - Y1)}")
                                 center_coord_list.append([Xc - X1, Yc - Y1])
                                 center_labels_list.append(1)  # передний план
                         else:
@@ -758,6 +775,7 @@ def process(operation_mode, source_files, out_path):
                             radius_points_list = u.get_points_in_radius(custom_mask.shape,
                                                                         (Xc, Yc),
                                                                         s.TILING_PROMPT_POINT_RADIUS)
+                            print("radius_points_list {}".format(len(radius_points_list)))
 
                             # Оставляем заданное количество точек
                             if len(radius_points_list) > 10:
@@ -766,11 +784,12 @@ def process(operation_mode, source_files, out_path):
                             if len(radius_points_list) == 0:
                                 # Отправляем точку центроида в список
                                 if (X1 <= Xc <= X2) and (Y1 <= Yc <= Y2):
+                                    print(f"Отправляем в список точку центроида: {(Xc - X1, Yc - Y1)}")
                                     center_coord_list.append([Xc - X1, Yc - Y1])
                                     center_labels_list.append(1)  # передний план
                             else:
                                 # Отправляем в список полученные "расщеплением" точки
-                                print(f"Отправляем в список полученные расщеплением {len(radius_points_list)} точек")
+                                print(f"Отправляем в список {len(radius_points_list)} точек, полученные расщеплением")
                                 for radius_point in radius_points_list:
                                     Xr, Yr = radius_point
                                     if (X1 <= Xr <= X2) and (Y1 <= Yr <= Y2):
@@ -823,6 +842,7 @@ def process(operation_mode, source_files, out_path):
                         mask_input=mask_input[None, :, :],
                         multimask_output=True
                     )
+
                 tool_model_sam2.counter += 1
                 # print(masks.shape, scores.shape)
 
@@ -834,21 +854,19 @@ def process(operation_mode, source_files, out_path):
                 if s.TILING_INVERSE_MODE:
                     iou_list = [w.calculate_mask_iou(custom_mask_inv, pred_mask) for pred_mask in masks]
                 else:
-                    print("custom_mask.shape", custom_mask.shape)
-                    print("pred_mask.shape", masks[0].shape)
                     iou_list = [w.calculate_mask_iou(custom_mask, pred_mask) for pred_mask in masks]
                 mask_idx = np.argmax(iou_list)
                 # print("iou_list", iou_list, mask_idx)
 
                 # Берем маску, по выбранному mask_idx и переводим в ч/б изображение
                 masks_img = masks[mask_idx].astype(np.uint8) * 255
-                print("masks_img.shape", masks_img.shape)
+                # print("masks_img.shape", masks_img.shape)
 
                 # В инверсном режиме готовую маску надо инвертировать
                 if s.TILING_INVERSE_MODE:
                     masks_img = 255 - masks_img
 
-                # TODO: Переходим к трёхканальному изображению
+                # TODO: Переходим к трёхканальному изображению для правильной сборки assemble_image
                 masks_img = cv.cvtColor(masks_img, cv.COLOR_GRAY2BGR)
 
                 # Сохраняем полученную маску в список

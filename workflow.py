@@ -448,10 +448,10 @@ def baseline(img,
             print("Быстрый выход без формирования финальной маски в оригинальном разрешении")
         return {
             "result_mask1024": result_mask1024,                              # маска в разрешении 1024
-            "result_mask1024_centers": result_mask1024_centers,              # визуализация центров масс в разрешении 1024
+            "result_mask1024_centers_rgb": result_mask1024_centers,          # визуализация центров масс в разрешении 1024 на трехканальном изображении
             "result_mask1024_original_size": result_mask1024_original_size,  # маска в оригинальном разрешении, полученная ресайзом из 1024
             'center_of_mass_original_list': center_of_mass_original_list,    # центры масс масок, пересчитанные в оригинальное разрешение
-            "result_image_final": None                                       # финальная маска в оригинальном разрешении НЕ СОЗДАВАЛАСЬ
+            "result_mask_original_final": None                               # финальная маска в оригинальном разрешении НЕ СОЗДАВАЛАСЬ
         }
 
     # Инициализация предиктора
@@ -660,10 +660,10 @@ def baseline(img,
 
     return {
         "result_mask1024": result_mask1024,                             # маска в разрешении 1024
-        "result_mask1024_centers": result_mask1024_centers,             # визуализация центров масс в разрешении 1024
+        "result_mask1024_centers_rgb": result_mask1024_centers,         # визуализация центров масс в разрешении 1024 на трехканальном изображении
         "result_mask1024_original_size": result_mask1024_original_size, # маска в оригинальном разрешении, полученная ресайзом из 1024
         'center_of_mass_original_list': center_of_mass_original_list,   # центры масс масок, пересчитанные в оригинальное разрешение
-        "result_image_final": result_image_final                        # финальная маска в оригинальном разрешении
+        "result_mask_original_final": result_image_final                # финальная маска в оригинальном разрешении
     }
 
 
@@ -692,7 +692,7 @@ def split_into_tiles(image,
     if overlap >= tile_size:
         raise ValueError("overlap must be less than tile_size")
 
-    # Добавление размерности каналов при необходимости TODO: проверить
+    # Добавление размерности каналов при необходимости
     if image.ndim == 2:
         image = image[..., np.newaxis]
     elif image.ndim != 3:
