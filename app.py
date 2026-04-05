@@ -756,10 +756,16 @@ def process(operation_mode, source_files, out_path):
                     center_labels_list = []
                     Y1, X1, Y2, X2 = curr_tile_coords
                     # print("Y1, X1, Y2, X2", Y1, X1, Y2, X2)
+                    # cv.rectangle(image_bgr_tiling_prompts, (X1, Y1), (X2, Y2), s.green, 7)
 
                     for center in center_of_mass_original_list:
                         Xc, Yc = center
                         # print("Xc, Yc", Xc, Yc)
+                        # cv.circle(image_bgr_tiling_prompts, (Xc, Yc), 7, s.green, -1)
+
+                        # if not ((X1 <= Xc <= X2) and (Y1 <= Yc <= Y2)):
+                        #     continue
+
 
                         if s.TILING_PROMPT_POINT_RADIUS == 0:
                             # Отправляем точку центроида в список
@@ -772,8 +778,10 @@ def process(operation_mode, source_files, out_path):
                                                                                      s.TILING_PROMPT_POINT_RADIUS))
 
                             # Фильтруем точки в заданном радиусе от центра
-                            radius_points_list = u.get_points_in_radius(custom_mask.shape,
-                                                                        (Xc, Yc),
+                            # radius_points_list = u.get_points_in_radius(custom_mask.shape,
+                            #                                             (Xc, Yc),
+                            #                                             s.TILING_PROMPT_POINT_RADIUS)
+                            radius_points_list = u.get_points_in_radius((Xc, Yc),
                                                                         s.TILING_PROMPT_POINT_RADIUS)
                             print("radius_points_list {}".format(len(radius_points_list)))
 
@@ -784,12 +792,12 @@ def process(operation_mode, source_files, out_path):
                             if len(radius_points_list) == 0:
                                 # Отправляем точку центроида в список
                                 if (X1 <= Xc <= X2) and (Y1 <= Yc <= Y2):
-                                    print(f"Отправляем в список точку центроида: {(Xc - X1, Yc - Y1)}")
+                                    print(f"  Отправляем в список точку центроида: {(Xc - X1, Yc - Y1)}")
                                     center_coord_list.append([Xc - X1, Yc - Y1])
                                     center_labels_list.append(1)  # передний план
                             else:
                                 # Отправляем в список полученные "расщеплением" точки
-                                print(f"Отправляем в список {len(radius_points_list)} точек, полученные расщеплением")
+                                print(f"  Отправляем в список {len(radius_points_list)} точек, полученные расщеплением")
                                 for radius_point in radius_points_list:
                                     Xr, Yr = radius_point
                                     if (X1 <= Xr <= X2) and (Y1 <= Yr <= Y2):
