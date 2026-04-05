@@ -641,7 +641,7 @@ def process(operation_mode, source_files, out_path):
                                 for radius_point in radius_points_list:
                                     Xr, Yr = radius_point
                                     # if (X1 <= Xr <= X2) and (Y1 <= Yr <= Y2):
-                                    if (X1 < Xr <= X2) and (Y1 < Yr <= Y2):
+                                    if (X1 < Xr < X2) and (Y1 < Yr < Y2):
                                         # print("Xr, Yr", Xr, Yr)
                                         center_coord_list.append([Xr - X1, Yr - Y1])
                                         center_labels_list.append(0)  # фон
@@ -804,7 +804,7 @@ def process(operation_mode, source_files, out_path):
                                 for radius_point in radius_points_list:
                                     Xr, Yr = radius_point
                                     # if (X1 <= Xr <= X2) and (Y1 <= Yr <= Y2):
-                                    if (X1 <= Xr < X2) and (Y1 <= Yr < Y2):
+                                    if (X1 < Xr < X2) and (Y1 < Yr < Y2):
                                         # print("Xr, Yr", Xr, Yr)
                                         center_coord_list.append([Xr - X1, Yr - Y1])
                                         center_labels_list.append(1)  # передний план
