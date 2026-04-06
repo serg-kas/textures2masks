@@ -2314,45 +2314,6 @@ def calculate_hist_chi_square_cv(image, threshold=10):
     return chi_square > threshold, chi_square
 
 
-# def get_points_in_radius(image_shape, center, radius):
-#     """
-#     Возвращает список точек (x, y) в радиусе от центра.
-#
-#     Параметры:
-#     image_shape : tuple (height, width)
-#         Размеры изображения (высота, ширина).
-#     center : tuple (x, y)
-#         Координаты центральной точки.
-#     radius : int
-#         Радиус окружности в пикселях.
-#
-#     Возвращает:
-#     list of tuples
-#         Список координат точек (x, y), находящихся внутри окружности.
-#     """
-#     if radius <= 0:
-#         return []
-#
-#     x0, y0 = center
-#     height, width = image_shape[:2]
-#     r_squared = radius ** 2
-#
-#     # Определяем границы области поиска
-#     x_min = max(0, x0 - radius)
-#     x_max = min(width, x0 + radius + 1)
-#     y_min = max(0, y0 - radius)
-#     y_max = min(height, y0 + radius + 1)
-#
-#     points = []
-#     for y in range(y_min, y_max):
-#         for x in range(x_min, x_max):
-#             dx = x - x0
-#             dy = y - y0
-#             distance_squared = dx * dx + dy * dy
-#             if distance_squared <= r_squared:
-#                 points.append((x, y))
-#
-#     return points
 def get_points_in_radius(center, radius):
     """
     Возвращает список точек (x, y) в радиусе от центра (без обрезки по границам).
@@ -2376,10 +2337,8 @@ def get_points_in_radius(center, radius):
 
     # Границы квадрата, в котором заведомо могут быть точки
     x_min = x0 - radius
-    # x_max = x0 + radius + 1
     x_max = x0 + radius
     y_min = y0 - radius
-    # y_max = y0 + radius + 1
     y_max = y0 + radius
 
     points = []
@@ -2388,7 +2347,8 @@ def get_points_in_radius(center, radius):
         dy2 = dy * dy
         for x in range(x_min, x_max):
             dx = x - x0
-            if dx * dx + dy2 <= r_squared:
+            dx2 = dx * dx
+            if dx2 + dy2 <= r_squared:
                 points.append((x, y))
     return points
 

@@ -610,11 +610,11 @@ def process(operation_mode, source_files, out_path):
                         if s.TILING_PROMPT_POINT_RADIUS == 0:
                             # Отправляем точку центроида в список
                             if (X1 < Xc < X2) and (Y1 <= Yc <= Y2):
-                                print(f"Отправляем в список точку центроида: {(Xc - X1, Yc - Y1)}")
+                                print(f"    Отправляем в список точку центроида: {(Xc - X1, Yc - Y1)}")
                                 center_coord_list.append([Xc - X1, Yc - Y1])
                                 center_labels_list.append(0)  # фон
                         else:
-                            print("Расщепление точки центра: {} в радиусе: {}".format((Xc, Yc),
+                            print("    Расщепление точки центра: {} в радиусе: {}".format((Xc, Yc),
                                                                                      s.TILING_PROMPT_POINT_RADIUS))
 
                             # Фильтруем точки в заданном радиусе от центра
@@ -632,12 +632,12 @@ def process(operation_mode, source_files, out_path):
                             if len(radius_points_list) == 0:
                                 # Отправляем точку центроида в список
                                 if (X1 < Xc < X2) and (Y1 <= Yc <= Y2):
-                                    print(f"Отправляем в список точку центроида: {(Xc - X1, Yc - Y1)}")
+                                    print(f"    Отправляем в список точку центроида: {(Xc - X1, Yc - Y1)}")
                                     center_coord_list.append([Xc - X1, Yc - Y1])
                                     center_labels_list.append(0)  # фон
                             else:
                                 # Отправляем в список полученные "расщеплением" точки
-                                print(f"Отправляем в список {len(radius_points_list)} точек, полученных расщеплением")
+                                print(f"      Отправляем в список {len(radius_points_list)} точек, полученных расщеплением")
                                 for radius_point in radius_points_list:
                                     Xr, Yr = radius_point
                                     if (X1 < Xr < X2) and (Y1 < Yr < Y2):
@@ -765,24 +765,17 @@ def process(operation_mode, source_files, out_path):
                         # print("Xc, Yc", Xc, Yc)
                         # cv.circle(image_bgr_tiling_prompts, (Xc, Yc), 7, s.green, -1)
 
-                        # if not ((X1 <= Xc <= X2) and (Y1 <= Yc <= Y2)):
-                        #     continue
-
-
                         if s.TILING_PROMPT_POINT_RADIUS == 0:
                             # Отправляем точку центроида в список
                             if (X1 < Xc < X2) and (Y1 < Yc < Y2):
-                                print(f"Отправляем в список точку центроида: {(Xc - X1, Yc - Y1)}")
+                                print(f"    Отправляем в список точку центроида: {(Xc - X1, Yc - Y1)}")
                                 center_coord_list.append([Xc - X1, Yc - Y1])
                                 center_labels_list.append(1)  # передний план
                         else:
-                            print("Расщепление точки центра: {} в радиусе: {}".format((Xc, Yc),
+                            print("    Расщепление точки центра: {} в радиусе: {}".format((Xc, Yc),
                                                                                      s.TILING_PROMPT_POINT_RADIUS))
 
-                            # Фильтруем точки в заданном радиусе от центра
-                            # radius_points_list = u.get_points_in_radius(custom_mask.shape,
-                            #                                             (Xc, Yc),
-                            #                                             s.TILING_PROMPT_POINT_RADIUS)
+                            # Создаем точки в заданном радиусе от центра
                             radius_points_list = u.get_points_in_radius((Xc, Yc),
                                                                         s.TILING_PROMPT_POINT_RADIUS)
                             # print("radius_points_list {}".format(len(radius_points_list)))
@@ -794,12 +787,12 @@ def process(operation_mode, source_files, out_path):
                             if len(radius_points_list) == 0:
                                 # Отправляем точку центроида в список
                                 if (X1 < Xc < X2) and (Y1 <= Yc <= Y2):
-                                    print(f"  Отправляем в список точку центроида: {(Xc - X1, Yc - Y1)}")
+                                    print(f"    Отправляем в список точку центроида: {(Xc - X1, Yc - Y1)}")
                                     center_coord_list.append([Xc - X1, Yc - Y1])
                                     center_labels_list.append(1)  # передний план
                             else:
                                 # Отправляем в список полученные "расщеплением" точки
-                                print(f"  Отправляем в список {len(radius_points_list)} точек, полученные расщеплением")
+                                print(f"      Отправляем в список {len(radius_points_list)} точек, полученные расщеплением")
                                 for radius_point in radius_points_list:
                                     Xr, Yr = radius_point
                                     if (X1 < Xr < X2) and (Y1 < Yr < Y2):
@@ -884,37 +877,38 @@ def process(operation_mode, source_files, out_path):
                 # u.show_image_cv(u.resize_image_cv(masks_img), title=str(masks_img.shape))
 
             # Сборка выходной маски
-            image_bgr_tiling = w.assemble_image(processed_mask_list,
+            image_final_tiling = w.assemble_image(processed_mask_list,
                                                 coords_list,
                                                 original_shape=image_bgr_original.shape,
                                                 overlap=s.TILING_OVERLAP)
+            # print("image_final_tiling", image_final_tiling.shape)
             # u.show_image_cv(u.resize_image_cv(image_bgr_tiling), title='masks_img')
 
-            if s.TILING_POST_PROCESS:
-                # Переходим к ч/б изображению
-                image_bgr_tiling = cv.cvtColor(image_bgr_tiling, cv.COLOR_BGR2GRAY)
-                # print(image_bgr_tiling.shape)
+            # Переходим к ч/б изображению
+            image_final_tiling = cv.cvtColor(image_final_tiling, cv.COLOR_BGR2GRAY)
+            # print("image_final_tiling", image_final_tiling.shape)
 
+            if s.TILING_POST_PROCESS:
                 # Убираем шум
                 kernel_shape = (s.TILING_POST_PROCESS_KERNEL_W,
                                 s.TILING_POST_PROCESS_KERNEL_H)
                 kernel = np.ones(kernel_shape, np.uint8)
-                mask_cleaned = cv.morphologyEx(image_bgr_tiling,
+                mask_cleaned = cv.morphologyEx(image_final_tiling,
                                                cv.MORPH_OPEN, kernel)
 
                 # Заполняем небольшие отверстия
-                image_bgr_tiling = cv.morphologyEx(mask_cleaned,
+                image_final_tiling = cv.morphologyEx(mask_cleaned,
                                                cv.MORPH_CLOSE, kernel)
-                # u.show_image_cv(u.resize_image_cv(image_bgr_tiling), title='masks_img_cleaned')
+                # u.show_image_cv(u.resize_image_cv(image_final_tiling), title='masks_img_cleaned')
 
-                # Переходим к трехканальному изображению
-                image_bgr_tiling = cv.cvtColor(image_bgr_tiling, cv.COLOR_GRAY2BGR)
+            # Переходим к трехканальному изображению
+            # image_final_tiling = cv.cvtColor(image_final_tiling, cv.COLOR_GRAY2BGR)
 
             # Имя выходного файла алгоритма тайла
             out_new_base_name = img_file_base_name[:-4] + "_tiling_mask.jpg"
             # Полный путь к выходному файлу
             out_new_file = os.path.join(out_path, out_new_base_name)
-            if cv.imwrite(str(out_new_file), image_bgr_tiling):
+            if cv.imwrite(str(out_new_file), image_final_tiling):
                 print("  Сохранили выходной файл маски: {}".format(out_new_file))
 
             # Имя выходного файла промптов алгоритма тайла
